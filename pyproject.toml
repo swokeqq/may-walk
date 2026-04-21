@@ -1,0 +1,6 @@
+[project]
+name = "may-walk"
+version = "0.1.0"
+description = "Веб-приложение для разработки, сохранения и правки маршрутов для ежегодного мероприятия майская прогулка."
+requires-python = ">=3.14"
+dependencies = []
