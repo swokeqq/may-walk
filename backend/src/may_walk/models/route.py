@@ -15,9 +15,7 @@ class Route(Base):
     """Маршрут."""
 
     __tablename__ = 'route'
-    __table_args__ = (
-        Index('ix_route_geometry', 'geometry', postgresql_using='gist'),
-    )
+    __table_args__ = (Index('ix_route_geometry', 'geometry', postgresql_using='gist'),)
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

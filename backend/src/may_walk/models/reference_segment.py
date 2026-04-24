@@ -13,7 +13,7 @@ class ReferenceSegment(Base):
     __tablename__ = 'reference_segment'
     __table_args__ = (
         CheckConstraint(
-            "surface_class IN "
+            'surface_class IN '
             "('asphalt', 'forest_path', 'field_path', 'rail', 'other')",
             name='ck_reference_segment_surface_class',
         ),

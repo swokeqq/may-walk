@@ -47,7 +47,7 @@ def upgrade() -> None:
         ),
         sa.Column('surface_class', sa.String(length=32), nullable=False),
         sa.CheckConstraint(
-            "surface_class IN "
+            'surface_class IN '
             "('asphalt', 'forest_path', 'field_path', 'rail', 'other')",
             name='ck_reference_segment_surface_class',
         ),
