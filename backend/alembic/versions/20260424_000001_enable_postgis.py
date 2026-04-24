@@ -17,5 +17,5 @@ def upgrade() -> None:
 
 
 def downgrade() -> None:
-    """Удалить расширение PostGIS."""
-    op.execute('DROP EXTENSION IF EXISTS postgis')
+    """Оставить расширение PostGIS установленным."""
+    # В postgis/postgis образе от него зависят дополнительные расширения.
