@@ -1,14 +1,35 @@
+[build-system]
+requires = ['hatchling']
+build-backend = 'hatchling.build'
+
 [project]
 name = "may-walk"
 version = "0.1.0"
 description = "Веб-приложение для разработки, сохранения и правки маршрутов для ежегодного мероприятия майская прогулка."
 requires-python = ">=3.14"
-dependencies = []
+dependencies = [
+    'alembic~=1.17',
+    'fastapi~=0.120',
+    'geoalchemy2~=0.18',
+    'psycopg[binary]~=3.2',
+    'pydantic-settings~=2.11',
+    'sqlalchemy~=2.0',
+    'uvicorn~=0.38',
+]
 
 [dependency-groups]
 dev = [
+    "httpx~=0.28",
+    "pytest~=8.4",
     "ruff~=0.15",
 ]
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/may_walk"]
+
+[tool.pytest.ini_options]
+pythonpath = ["src"]
+testpaths = ["tests"]
 
 [tool.ruff]
 src = ["src"]
