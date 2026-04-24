@@ -9,6 +9,7 @@ from sqlalchemy import engine_from_config, pool
 
 sys.path.append(str(Path(__file__).resolve().parents[1] / 'src'))
 
+import may_walk.models  # noqa: F401  # регистрирует ORM модели в Base.metadata
 from may_walk.core.settings import settings
 from may_walk.db.base import Base
 

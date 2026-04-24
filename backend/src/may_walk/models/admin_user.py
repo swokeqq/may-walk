@@ -34,6 +34,7 @@ class AdminUser(Base):
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
+        onupdate=func.now(),
     )
     sessions: Mapped[list['AuthSession']] = relationship(
         back_populates='user',

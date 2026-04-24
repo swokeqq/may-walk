@@ -4,7 +4,7 @@ import uuid
 from datetime import datetime
 from typing import TYPE_CHECKING
 
-from sqlalchemy import DateTime, ForeignKey, func
+from sqlalchemy import DateTime, ForeignKey, Index, func
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
@@ -19,7 +19,11 @@ class AuthSession(Base):
 
     __tablename__ = 'auth_session'
 
-    __table_args__ = ()
+    __table_args__ = (
+        Index('ix_auth_session_user_id', 'user_id'),
+        Index('ix_auth_session_expires_at', 'expires_at'),
+        Index('ix_auth_session_revoked_at', 'revoked_at'),
+    )
 
     id: Mapped[uuid.UUID] = mapped_column(
         UUID(as_uuid=True),

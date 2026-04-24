@@ -1,7 +1,7 @@
 """ORM модель опорного сегмента расчетной сети."""
 
 from geoalchemy2 import Geometry
-from sqlalchemy import CheckConstraint, String
+from sqlalchemy import BigInteger, CheckConstraint, Index, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from may_walk.db.base import Base
@@ -17,9 +17,18 @@ class ReferenceSegment(Base):
             "('asphalt', 'forest_path', 'field_path', 'rail', 'other')",
             name='ck_reference_segment_surface_class',
         ),
+        Index(
+            'ix_reference_segment_geometry',
+            'geometry',
+            postgresql_using='gist',
+        ),
     )
 
-    id: Mapped[int] = mapped_column(primary_key=True, autoincrement=True)
+    id: Mapped[int] = mapped_column(
+        BigInteger,
+        primary_key=True,
+        autoincrement=True,
+    )
     geometry: Mapped[object] = mapped_column(
         Geometry(
             geometry_type='LINESTRING',
