@@ -24,10 +24,19 @@
 ## Alembic И PostGIS
 
 - Alembic настроен в `backend/alembic.ini`; `backend/alembic/env.py` вручную добавляет `backend/src` в `sys.path` из-за `src`-layout. Если меняешь структуру пакета, обнови и `alembic/env.py`.
-- Первая миграция `backend/alembic/versions/20260424_000001_enable_postgis.py` только включает расширение `postgis`.
+- Первая миграция `backend/alembic/versions/20260424_000001_enable_postgis.py` только включает расширение `postgis`. Ее `downgrade()` не удаляет расширение, потому что в `postgis/postgis` образе от него зависят дополнительные расширения.
+
+## Схема БД
+
+- Для геометрий используй колонку `geometry`, не `geom`.
+- `route` хранит `id`, `name`, `geometry`, `created_at`, `updated_at`. Поле `notes` не добавляй: функциональность комментариев не входит в MVP.
+- `reference_segment` хранит `id`, `geometry`, `surface_class`. Поле `is_walkable` не добавляй: неподходящие сегменты должны отфильтровываться при подготовке слоя.
+- `admin_user` хранит только `id`, `password_hash`, `created_at`, `updated_at`. Не добавляй `username`, `email` или `is_active` без отдельного решения.
+- `auth_session` хранит `id`, `user_id`, `expires_at`, `created_at`, `revoked_at`. Поле `last_seen_at` не добавляй. `expires_at` отвечает за автоматическое истечение сессии, `revoked_at` — за logout.
 
 ## Проверка Изменений
 
 - Для обычных backend-изменений повторяй порядок из CI: `uv sync --dev --frozen` -> `uv run ruff check .` -> `uv run ruff format --check .` -> `uv run pytest`.
 - DB-зависимые проверки локально запускай только после поднятия PostGIS и `uv run alembic upgrade head`.
+- Если Docker-стек поднят с проброшенным портом, локально запускай Alembic и DB-тесты с `DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/may_walk`. Host `db` работает только внутри Docker-сети.
 - GitHub Actions workflow: `.github/workflows/backend-ci.yml`. Job `test` поднимает `postgis/postgis:17-3.5`, задает `DATABASE_URL`, потом применяет миграции и запускает `pytest`.
