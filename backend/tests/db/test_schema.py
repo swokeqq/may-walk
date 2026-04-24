@@ -8,7 +8,7 @@ from may_walk.db.session import engine
 
 
 def fetch_column_names(table_name: str) -> set[str]:
-    """Получить имена колонок таблицы из `information_schema`."""
+    """Получить имена колонок таблицы из information_schema."""
     query = text(
         """
         SELECT column_name
@@ -22,7 +22,7 @@ def fetch_column_names(table_name: str) -> set[str]:
 
 
 def fetch_index_names(table_name: str) -> set[str]:
-    """Получить имена индексов таблицы из `pg_indexes`."""
+    """Получить имена индексов таблицы из pg_indexes."""
     query = text(
         """
         SELECT indexname
@@ -36,7 +36,7 @@ def fetch_index_names(table_name: str) -> set[str]:
 
 
 def fetch_constraint_names(table_name: str, constraint_type: str) -> set[str]:
-    """Получить имена ограничений таблицы из `pg_constraint`."""
+    """Получить имена ограничений таблицы из pg_constraint."""
     query = text(
         """
         SELECT pg_constraint.conname
