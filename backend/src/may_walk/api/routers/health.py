@@ -2,10 +2,12 @@
 
 from fastapi import APIRouter
 
+from may_walk.schemas.health import HealthResponse
+
 router = APIRouter(tags=['health'])
 
 
-@router.get('/health')
-def healthcheck() -> dict[str, str]:
+@router.get('/health', response_model=HealthResponse)
+def healthcheck() -> HealthResponse:
     """Вернуть статус приложения."""
-    return {'status': 'ok'}
+    return HealthResponse(status='ok')
