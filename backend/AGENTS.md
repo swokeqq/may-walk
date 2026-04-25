@@ -12,7 +12,13 @@
 - Все тесты: `uv run pytest`
 - Один тест: `uv run pytest tests/api/test_health.py`
 - Миграции: `uv run alembic upgrade head`
+- Создать первого администратора: `uv run python -m may_walk.cli create-admin`
 - Локальный запуск API: `uv run uvicorn may_walk.main:app --host 0.0.0.0 --port 8000`
+
+## Структура Кода
+
+- Для новых файлов предпочитай полные имена вместо сокращений: `dependencies.py`, `authentication.py`, а не `deps.py` или `auth.py`.
+- API роутеры размещай в `src/may_walk/api/routers/`; `src/may_walk/api/router.py` должен только собирать роутеры.
 
 ## Настройки И БД
 
@@ -20,6 +26,7 @@
 - У `DATABASE_URL` нет значения по умолчанию. Все сценарии, которые импортируют `may_walk.db.session` или запускают Alembic, требуют заранее заданный `DATABASE_URL`.
 - Локальный Docker-стек живет в `backend/compose.yml` и читает `backend/.env`. Для новой машины начинай с `backend/.env.example`.
 - Из корня репозитория backend-стек поднимается так: `docker compose -f backend/compose.yml up`.
+- В `.env.example` `AUTH_COOKIE_SECURE=true`; для локальной разработки через HTTP в `backend/.env` можно задавать `AUTH_COOKIE_SECURE=false`.
 
 ## Alembic И PostGIS
 
@@ -32,7 +39,15 @@
 - `route` хранит `id`, `name`, `geometry`, `created_at`, `updated_at`. Поле `notes` не добавляй: функциональность комментариев не входит в MVP.
 - `reference_segment` хранит `id`, `geometry`, `surface_class`. Поле `is_walkable` не добавляй: неподходящие сегменты должны отфильтровываться при подготовке слоя.
 - `admin_user` хранит только `id`, `password_hash`, `created_at`, `updated_at`. Не добавляй `username`, `email` или `is_active` без отдельного решения.
+- В `admin_user` допускается не больше одной записи; это ограничено индексом `uq_admin_user_singleton`.
 - `auth_session` хранит `id`, `user_id`, `expires_at`, `created_at`, `revoked_at`. Поле `last_seen_at` не добавляй. `expires_at` отвечает за автоматическое истечение сессии, `revoked_at` — за logout.
+
+## Аутентификация
+
+- Первый администратор создается только интерактивной CLI-командой `uv run python -m may_walk.cli create-admin`; пароль не читается из env.
+- Auth использует серверные сессии в `auth_session` и `HttpOnly` cookie `mw_session`.
+- Для неуспешной аутентификации используй `401 Unauthorized`; `403 Forbidden` пока не используется, потому что нет ролей, прав доступа или `is_active`.
+- Защищенные endpoint'ы должны использовать dependency `require_auth()` из `src/may_walk/api/dependencies.py`.
 
 ## Проверка Изменений
 
