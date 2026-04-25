@@ -130,6 +130,27 @@ def test_logout_revokes_session_and_clears_cookie(client: TestClient) -> None:
         assert auth_session.revoked_at is not None
 
 
+def test_auth_openapi_documents_unauthenticated_responses(
+    client: TestClient,
+) -> None:
+    """Проверить документацию 401-ответов auth endpoint'ов."""
+    response = client.get('/openapi.json')
+
+    assert response.status_code == 200
+    paths = response.json()['paths']
+    for method, path in (
+        ('post', '/api/auth/login'),
+        ('get', '/api/auth/status'),
+    ):
+        unauthenticated_response = paths[path][method]['responses']['401']
+        assert unauthenticated_response['description'] == 'Аутентификация не пройдена.'
+        assert unauthenticated_response['content']['application/json']['schema'] == {
+            '$ref': '#/components/schemas/AuthStatusResponse',
+        }
+
+    assert '401' not in paths['/api/auth/logout']['post']['responses']
+
+
 def _create_admin(password: str) -> UUID:
     """Создать администратора для теста."""
     with SessionLocal() as session:
