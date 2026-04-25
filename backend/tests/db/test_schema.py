@@ -105,6 +105,7 @@ def test_admin_user_schema() -> None:
     _assert_has_columns(
         'admin_user', {'id', 'password_hash', 'created_at', 'updated_at'}
     )
+    assert 'uq_admin_user_singleton' in _fetch_index_names('admin_user')
 
 
 def test_auth_session_schema() -> None:
