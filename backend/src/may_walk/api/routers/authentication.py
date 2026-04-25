@@ -22,6 +22,11 @@ router = APIRouter(prefix='/api/auth', tags=['auth'])
 UNAUTHENTICATED_RESPONSE = {
     'model': AuthStatusResponse,
     'description': 'Аутентификация не пройдена.',
+    'content': {
+        'application/json': {
+            'example': {'authenticated': False},
+        },
+    },
 }
 
 

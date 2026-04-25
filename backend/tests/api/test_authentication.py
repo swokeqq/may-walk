@@ -147,6 +147,9 @@ def test_auth_openapi_documents_unauthenticated_responses(
         assert unauthenticated_response['content']['application/json']['schema'] == {
             '$ref': '#/components/schemas/AuthStatusResponse',
         }
+        assert unauthenticated_response['content']['application/json']['example'] == {
+            'authenticated': False,
+        }
 
     assert '401' not in paths['/api/auth/logout']['post']['responses']
 
