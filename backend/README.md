@@ -69,7 +69,7 @@ uv run ruff check .
 uv run ruff format --check .
 ```
 
-Тесты с БД из Docker Compose:
+Тесты:
 
 ```bash
 DATABASE_URL='postgresql+psycopg://postgres:postgres@localhost:5432/may_walk' uv run pytest
