@@ -19,8 +19,22 @@ from may_walk.services.authentication import (
 
 router = APIRouter(prefix='/api/auth', tags=['auth'])
 
+UNAUTHENTICATED_RESPONSE = {
+    'model': AuthStatusResponse,
+    'description': 'Аутентификация не пройдена.',
+    'content': {
+        'application/json': {
+            'example': {'authenticated': False},
+        },
+    },
+}
 
-@router.post('/login', response_model=AuthStatusResponse)
+
+@router.post(
+    '/login',
+    response_model=AuthStatusResponse,
+    responses={status.HTTP_401_UNAUTHORIZED: UNAUTHENTICATED_RESPONSE},
+)
 def login(
     request: LoginRequest,
     response: Response,
@@ -45,7 +59,11 @@ def login(
     return AuthStatusResponse(authenticated=True)
 
 
-@router.get('/status', response_model=AuthStatusResponse)
+@router.get(
+    '/status',
+    response_model=AuthStatusResponse,
+    responses={status.HTTP_401_UNAUTHORIZED: UNAUTHENTICATED_RESPONSE},
+)
 def auth_status(
     db: Annotated[Session, Depends(get_db)],
     session_id: Annotated[str | None, Cookie(alias=AUTH_COOKIE_NAME)] = None,
