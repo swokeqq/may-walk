@@ -5,7 +5,7 @@ import getpass
 import sys
 
 
-def read_admin_password() -> str:
+def _read_admin_password() -> str:
     """Получить пароль администратора из интерактивного ввода."""
     password = getpass.getpass('Пароль администратора: ')
     password_confirmation = getpass.getpass('Повторите пароль администратора: ')
@@ -15,12 +15,12 @@ def read_admin_password() -> str:
     return password
 
 
-def create_admin() -> int:
+def _create_admin() -> int:
     """Создать первого и единственного администратора."""
     from may_walk.db.session import SessionLocal
     from may_walk.services.admin import create_admin as create_admin_service
 
-    password = read_admin_password()
+    password = _read_admin_password()
 
     with SessionLocal() as session:
         create_admin_service(session, password)
@@ -39,7 +39,7 @@ def main() -> int:
     args = parser.parse_args()
     try:
         if args.command == 'create-admin':
-            return create_admin()
+            return _create_admin()
     except ValueError as error:
         print(f'Ошибка: {error}', file=sys.stderr)
         return 1

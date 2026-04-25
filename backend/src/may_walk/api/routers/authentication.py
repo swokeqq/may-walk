@@ -29,7 +29,7 @@ def login(
     """Войти по паролю администратора."""
     admin = authenticate_admin(db, request.password)
     if admin is None:
-        return unauthenticated_response()
+        return _unauthenticated_response()
 
     auth_session = create_auth_session(db, admin, settings.auth_session_ttl_hours)
     db.commit()
@@ -52,15 +52,15 @@ def auth_status(
 ) -> AuthStatusResponse | JSONResponse:
     """Вернуть статус текущей auth-сессии."""
     if session_id is None:
-        return unauthenticated_response()
+        return _unauthenticated_response()
 
     try:
         parsed_session_id = UUID(session_id)
     except ValueError:
-        return unauthenticated_response()
+        return _unauthenticated_response()
 
     if get_valid_auth_session(db, parsed_session_id) is None:
-        return unauthenticated_response()
+        return _unauthenticated_response()
 
     return AuthStatusResponse(authenticated=True)
 
@@ -93,7 +93,7 @@ def logout(
     return response
 
 
-def unauthenticated_response() -> JSONResponse:
+def _unauthenticated_response() -> JSONResponse:
     """Вернуть единый 401-ответ для невалидной auth-сессии."""
     return JSONResponse(
         status_code=status.HTTP_401_UNAUTHORIZED,
