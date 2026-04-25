@@ -9,6 +9,7 @@ description = "Веб-приложение для разработки, сохр
 requires-python = ">=3.14"
 dependencies = [
     'alembic~=1.17',
+    "argon2-cffi~=25.1",
     'fastapi~=0.120',
     'geoalchemy2~=0.18',
     'psycopg[binary]~=3.2',

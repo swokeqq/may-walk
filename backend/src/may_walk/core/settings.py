@@ -14,6 +14,9 @@ class Settings(BaseSettings):
 
     debug: bool = False
     database_url: str
+    auth_cookie_secure: bool = True
+    auth_cookie_samesite: str = 'lax'
+    auth_session_ttl_hours: int = 24
 
 
 settings = Settings()
