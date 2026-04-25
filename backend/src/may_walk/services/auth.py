@@ -45,3 +45,8 @@ def get_valid_auth_session(session: Session, session_id: UUID) -> AuthSession | 
         return None
 
     return auth_session
+
+
+def revoke_auth_session(auth_session: AuthSession) -> None:
+    """Отозвать auth-сессию."""
+    auth_session.revoked_at = datetime.now(UTC)

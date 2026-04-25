@@ -14,6 +14,7 @@ from may_walk.services.auth import (
     authenticate_admin,
     create_auth_session,
     get_valid_auth_session,
+    revoke_auth_session,
 )
 
 AUTH_COOKIE_NAME = 'mw_session'
@@ -65,6 +66,34 @@ def auth_status(
         return unauthenticated_response()
 
     return AuthStatusResponse(authenticated=True)
+
+
+@router.post('/logout', status_code=status.HTTP_204_NO_CONTENT)
+def logout(
+    response: Response,
+    db: Annotated[Session, Depends(get_db)],
+    session_id: Annotated[str | None, Cookie(alias=AUTH_COOKIE_NAME)] = None,
+) -> Response:
+    """Выйти из текущей auth-сессии."""
+    if session_id is not None:
+        try:
+            parsed_session_id = UUID(session_id)
+        except ValueError:
+            parsed_session_id = None
+
+        if parsed_session_id is not None:
+            auth_session = get_valid_auth_session(db, parsed_session_id)
+            if auth_session is not None:
+                revoke_auth_session(auth_session)
+                db.commit()
+
+    response.delete_cookie(
+        key=AUTH_COOKIE_NAME,
+        path=AUTH_COOKIE_PATH,
+        secure=settings.auth_cookie_secure,
+        samesite=settings.auth_cookie_samesite,
+    )
+    return response
 
 
 def unauthenticated_response() -> JSONResponse:
