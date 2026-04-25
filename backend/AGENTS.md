@@ -10,7 +10,9 @@
 - Линт: `uv run ruff check .`
 - Проверка форматирования: `uv run ruff format --check .`
 - Все тесты: `uv run pytest`
+- Все тесты локально в PowerShell с БД на localhost: `$env:DATABASE_URL='postgresql+psycopg://postgres:postgres@localhost:5432/may_walk'; uv run pytest`
 - Один тест: `uv run pytest tests/api/test_health.py`
+- Один DB-зависимый тест локально в PowerShell: `$env:DATABASE_URL='postgresql+psycopg://postgres:postgres@localhost:5432/may_walk'; uv run pytest tests/api/test_authentication.py`
 - Миграции: `uv run alembic upgrade head`
 - Создать первого администратора: `uv run python -m may_walk.cli create-admin`
 - Локальный запуск API: `uv run uvicorn may_walk.main:app --host 0.0.0.0 --port 8000`
@@ -53,5 +55,5 @@
 
 - Для обычных backend-изменений повторяй порядок из CI: `uv sync --dev --frozen` -> `uv run ruff check .` -> `uv run ruff format --check .` -> `uv run pytest`.
 - DB-зависимые проверки локально запускай только после поднятия PostGIS и `uv run alembic upgrade head`.
-- Если Docker-стек поднят с проброшенным портом, локально запускай Alembic и DB-тесты с `DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/may_walk`. Host `db` работает только внутри Docker-сети.
+- Если Docker-стек поднят с проброшенным портом, локально запускай Alembic и DB-тесты с `DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/may_walk`; в PowerShell задавай переменную как `$env:DATABASE_URL='postgresql+psycopg://postgres:postgres@localhost:5432/may_walk'; <command>`. Host `db` работает только внутри Docker-сети.
 - GitHub Actions workflow: `.github/workflows/backend-ci.yml`. Job `test` поднимает `postgis/postgis:17-3.5`, задает `DATABASE_URL`, потом применяет миграции и запускает `pytest`.
