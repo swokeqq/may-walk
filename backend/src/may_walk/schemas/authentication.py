@@ -1,4 +1,4 @@
-"""Схемы auth ендпоинтов."""
+"""Cхемы ендпоинтов аутентификации."""
 
 from pydantic import BaseModel
 
