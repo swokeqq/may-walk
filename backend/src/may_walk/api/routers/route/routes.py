@@ -63,7 +63,7 @@ def routes_create(
     return _route_response(route_with_geometry.route, route_with_geometry.geometry)
 
 
-@router.get('/{route_id}', response_model=RouteResponse)
+@router.get('/{route_id:uuid}', response_model=RouteResponse)
 def routes_get(
     route_id: UUID,
     db: Annotated[Session, Depends(get_db)],
@@ -76,7 +76,7 @@ def routes_get(
     return _route_response(route_with_geometry.route, route_with_geometry.geometry)
 
 
-@router.patch('/{route_id}', response_model=RouteResponse)
+@router.patch('/{route_id:uuid}', response_model=RouteResponse)
 def routes_update(
     route_id: UUID,
     request: RouteUpdateRequest,
@@ -103,7 +103,7 @@ def routes_update(
     return _route_response(route_with_geometry.route, route_with_geometry.geometry)
 
 
-@router.delete('/{route_id}', status_code=status.HTTP_204_NO_CONTENT)
+@router.delete('/{route_id:uuid}', status_code=status.HTTP_204_NO_CONTENT)
 def routes_delete(route_id: UUID, db: Annotated[Session, Depends(get_db)]) -> Response:
     """Удалить маршрут."""
     route = get_route(db, route_id)

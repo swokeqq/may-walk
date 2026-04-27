@@ -19,7 +19,7 @@ router = APIRouter(
 )
 
 
-@router.get('/{route_id}/export')
+@router.get('/{route_id:uuid}/export')
 def routes_export(
     route_id: UUID,
     export_format: Annotated[RouteExportFormat, Query(alias='format')],
