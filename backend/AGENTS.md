@@ -20,7 +20,10 @@
 ## Структура Кода
 
 - Для новых файлов предпочитай полные имена вместо сокращений: `dependencies.py`, `authentication.py`, а не `deps.py` или `auth.py`.
-- API роутеры размещай в `src/may_walk/api/routers/`; `src/may_walk/api/router.py` должен только собирать роутеры.
+- API роутеры размещай в `src/may_walk/api/routers/`; для доменных групп можно использовать подпакеты, например `src/may_walk/api/routers/route/`.
+- `src/may_walk/api/router.py` должен только собирать роутеры.
+- Route-сервисы размещай в `src/may_walk/services/route/`: CRUD в `crud.py`, импорт в `imports/`, экспорт в `exports/`.
+- Реализации route import/export форматов держи отдельными handler-классами по файлам форматов, а регистрацию форматов — в `imports/__init__.py` и `exports/__init__.py`.
 
 ## Настройки И БД
 
@@ -51,9 +54,19 @@
 - Для неуспешной аутентификации используй `401 Unauthorized`; `403 Forbidden` пока не используется, потому что нет ролей, прав доступа или `is_active`.
 - Защищенные endpoint'ы должны использовать dependency `require_auth()` из `src/may_walk/api/dependencies.py`.
 
+## Маршруты
+
+- CRUD endpoint'ы маршрутов живут в `src/may_walk/api/routers/route/routes.py`.
+- Импорт маршрутов живет в `src/may_walk/api/routers/route/imports.py`, экспорт — в `src/may_walk/api/routers/route/exports.py`.
+- CRUD/import ответы маршрутов не должны возвращать `total_length_m`; длина относится к будущему `stats` endpoint'у.
+- Все GeoJSON-геометрии в API должны быть в `EPSG:4326`; `LineString` на входе нормализуется в `MultiLineString`.
+- Импорт маршрутов на текущем этапе работает без snap; `snap=true` должен явно возвращать ошибку, пока OSM snap не реализован.
+- Для новых форматов import/export добавляй новый handler и регистрируй его в соответствующем registry, не добавляй ветвление в endpoint'ы.
+
 ## Проверка Изменений
 
 - Для обычных backend-изменений повторяй порядок из CI: `uv sync --dev --frozen` -> `uv run ruff check .` -> `uv run ruff format --check .` -> `uv run pytest`.
 - DB-зависимые проверки локально запускай только после поднятия PostGIS и `uv run alembic upgrade head`.
 - Если Docker-стек поднят с проброшенным портом, локально запускай Alembic и DB-тесты с `DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/may_walk`; в PowerShell задавай переменную как `$env:DATABASE_URL='postgresql+psycopg://postgres:postgres@localhost:5432/may_walk'; <command>`. Host `db` работает только внутри Docker-сети.
+- Route API-тесты лежат в `tests/api/route/`; локально их можно запускать так: `$env:DATABASE_URL='postgresql+psycopg://postgres:postgres@localhost:5432/may_walk'; uv run pytest tests/api/route`.
 - GitHub Actions workflow: `.github/workflows/backend-ci.yml`. Job `test` поднимает `postgis/postgis:17-3.5`, задает `DATABASE_URL`, потом применяет миграции и запускает `pytest`.
