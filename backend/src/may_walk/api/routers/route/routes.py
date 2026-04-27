@@ -3,7 +3,7 @@
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from may_walk.api.dependencies import get_db, require_auth
@@ -11,7 +11,6 @@ from may_walk.models.route import Route
 from may_walk.schemas.geometries import GeoJSONGeometry
 from may_walk.schemas.routes import (
     RouteCreateRequest,
-    RouteExportFormat,
     RouteListItemResponse,
     RouteListResponse,
     RouteResponse,
@@ -26,7 +25,6 @@ from may_walk.services.route.crud import (
     list_routes,
     update_route,
 )
-from may_walk.services.route.exports import export_route_file
 
 router = APIRouter(
     prefix='/api/routes',
@@ -117,39 +115,6 @@ def routes_delete(route_id: UUID, db: Annotated[Session, Depends(get_db)]) -> Re
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
-@router.get('/{route_id}/export')
-def routes_export(
-    route_id: UUID,
-    export_format: Annotated[RouteExportFormat, Query(alias='format')],
-    db: Annotated[Session, Depends(get_db)],
-) -> Response:
-    """Экспортировать маршрут в файл."""
-    route_with_geometry = get_route_with_geometry(db, route_id)
-    if route_with_geometry is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Route not found')
-    if route_with_geometry.geometry is None:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail={'error': 'Route has no geometry'},
-        )
-
-    exported_file = export_route_file(
-        route_with_geometry.route,
-        route_with_geometry.geometry,
-        export_format,
-    )
-    return Response(
-        content=exported_file.content,
-        media_type=exported_file.media_type,
-        headers={
-            'Content-Disposition': _attachment_header(
-                route_with_geometry.route,
-                exported_file.extension,
-            ),
-        },
-    )
-
-
 def _route_response(route: Route, geometry: GeoJSONGeometry | None) -> RouteResponse:
     """Собрать API-ответ маршрута."""
     return RouteResponse(
@@ -159,8 +124,3 @@ def _route_response(route: Route, geometry: GeoJSONGeometry | None) -> RouteResp
         created_at=route.created_at,
         updated_at=route.updated_at,
     )
-
-
-def _attachment_header(route: Route, extension: str) -> str:
-    """Сформировать Content-Disposition для экспорта."""
-    return f'attachment; filename="route-{route.id}.{extension}"'
