@@ -1,4 +1,4 @@
-"""Ендпоинты маршрутов."""
+"""CRUD-ендпоинты маршрутов."""
 
 from typing import Annotated
 from uuid import UUID

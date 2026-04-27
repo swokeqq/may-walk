@@ -56,7 +56,7 @@
 
 ## Маршруты
 
-- CRUD endpoint'ы маршрутов живут в `src/may_walk/api/routers/route/routes.py`.
+- CRUD endpoint'ы маршрутов живут в `src/may_walk/api/routers/route/crud.py`.
 - Импорт маршрутов живет в `src/may_walk/api/routers/route/imports.py`, экспорт — в `src/may_walk/api/routers/route/exports.py`.
 - CRUD/import ответы маршрутов не должны возвращать `total_length_m`; длина относится к будущему `stats` endpoint'у.
 - Все GeoJSON-геометрии в API должны быть в `EPSG:4326`; `LineString` на входе нормализуется в `MultiLineString`.
