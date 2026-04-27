@@ -18,8 +18,7 @@ from may_walk.schemas.routes import (
     RouteUpdateRequest,
 )
 from may_walk.services.geometries import GeometryValidationError
-from may_walk.services.route_exports import export_route_file
-from may_walk.services.routes import (
+from may_walk.services.route.crud import (
     create_route,
     delete_route,
     get_route,
@@ -27,6 +26,7 @@ from may_walk.services.routes import (
     list_routes,
     update_route,
 )
+from may_walk.services.route.exports import export_route_file
 
 router = APIRouter(
     prefix='/api/routes',
