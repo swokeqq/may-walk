@@ -1,8 +1,6 @@
 """Ендпоинты маршрутов."""
 
-import json
-from html import escape
-from typing import Annotated, Any
+from typing import Annotated
 from uuid import UUID
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
@@ -20,6 +18,7 @@ from may_walk.schemas.routes import (
     RouteUpdateRequest,
 )
 from may_walk.services.geometries import GeometryValidationError
+from may_walk.services.route_exports import export_route_file
 from may_walk.services.routes import (
     create_route,
     delete_route,
@@ -134,12 +133,21 @@ def routes_export(
             detail={'error': 'Route has no geometry'},
         )
 
-    if export_format == RouteExportFormat.geojson:
-        return _geojson_export_response(route_with_geometry.route, route_with_geometry.geometry)
-    if export_format == RouteExportFormat.gpx:
-        return _gpx_export_response(route_with_geometry.route, route_with_geometry.geometry)
-
-    return _kml_export_response(route_with_geometry.route, route_with_geometry.geometry)
+    exported_file = export_route_file(
+        route_with_geometry.route,
+        route_with_geometry.geometry,
+        export_format,
+    )
+    return Response(
+        content=exported_file.content,
+        media_type=exported_file.media_type,
+        headers={
+            'Content-Disposition': _attachment_header(
+                route_with_geometry.route,
+                exported_file.extension,
+            ),
+        },
+    )
 
 
 def _route_response(route: Route, geometry: GeoJSONGeometry | None) -> RouteResponse:
@@ -151,75 +159,6 @@ def _route_response(route: Route, geometry: GeoJSONGeometry | None) -> RouteResp
         created_at=route.created_at,
         updated_at=route.updated_at,
     )
-
-
-def _geojson_export_response(route: Route, geometry: GeoJSONGeometry) -> Response:
-    """Сформировать GeoJSON-файл маршрута."""
-    content = json.dumps(
-        {
-            'type': 'Feature',
-            'properties': {'id': str(route.id), 'name': route.name},
-            'geometry': geometry.model_dump(),
-        },
-        ensure_ascii=False,
-    )
-    return Response(
-        content=content,
-        media_type='application/geo+json',
-        headers={'Content-Disposition': _attachment_header(route, 'geojson')},
-    )
-
-
-def _gpx_export_response(route: Route, geometry: GeoJSONGeometry) -> Response:
-    """Сформировать GPX-файл маршрута."""
-    segments = []
-    for line in _multi_line_coordinates(geometry):
-        points = ''.join(
-            f'<trkpt lat="{lat}" lon="{lon}"></trkpt>' for lon, lat in line
-        )
-        segments.append(f'<trkseg>{points}</trkseg>')
-
-    content = (
-        '<?xml version="1.0" encoding="UTF-8"?>'
-        '<gpx version="1.1" creator="May Walk" '
-        'xmlns="http://www.topografix.com/GPX/1/1">'
-        f'<trk><name>{escape(route.name)}</name>{"".join(segments)}</trk>'
-        '</gpx>'
-    )
-    return Response(
-        content=content,
-        media_type='application/gpx+xml',
-        headers={'Content-Disposition': _attachment_header(route, 'gpx')},
-    )
-
-
-def _kml_export_response(route: Route, geometry: GeoJSONGeometry) -> Response:
-    """Сформировать KML-файл маршрута."""
-    line_strings = []
-    for line in _multi_line_coordinates(geometry):
-        coordinates = ' '.join(f'{lon},{lat},0' for lon, lat in line)
-        line_strings.append(f'<LineString><coordinates>{coordinates}</coordinates></LineString>')
-
-    content = (
-        '<?xml version="1.0" encoding="UTF-8"?>'
-        '<kml xmlns="http://www.opengis.net/kml/2.2">'
-        '<Document>'
-        f'<Placemark><name>{escape(route.name)}</name>'
-        f'<MultiGeometry>{"".join(line_strings)}</MultiGeometry>'
-        '</Placemark>'
-        '</Document>'
-        '</kml>'
-    )
-    return Response(
-        content=content,
-        media_type='application/vnd.google-earth.kml+xml',
-        headers={'Content-Disposition': _attachment_header(route, 'kml')},
-    )
-
-
-def _multi_line_coordinates(geometry: GeoJSONGeometry) -> list[Any]:
-    """Вернуть координаты MultiLineString."""
-    return geometry.model_dump()['coordinates']
 
 
 def _attachment_header(route: Route, extension: str) -> str:
