@@ -37,7 +37,9 @@ router = APIRouter(
 def routes_list(db: Annotated[Session, Depends(get_db)]) -> RouteListResponse:
     """Вернуть список маршрутов без полной геометрии."""
     return RouteListResponse(
-        items=[RouteListItemResponse.model_validate(route) for route in list_routes(db)],
+        items=[
+            RouteListItemResponse.model_validate(route) for route in list_routes(db)
+        ],
     )
 
 
@@ -58,7 +60,9 @@ def routes_create(
     db.commit()
     route_with_geometry = get_route_with_geometry(db, route.id)
     if route_with_geometry is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Route not found')
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='Route not found'
+        )
 
     return _route_response(route_with_geometry.route, route_with_geometry.geometry)
 
@@ -71,7 +75,9 @@ def routes_get(
     """Вернуть маршрут с полной геометрией."""
     route_with_geometry = get_route_with_geometry(db, route_id)
     if route_with_geometry is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Route not found')
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='Route not found'
+        )
 
     return _route_response(route_with_geometry.route, route_with_geometry.geometry)
 
@@ -85,7 +91,9 @@ def routes_update(
     """Обновить маршрут."""
     route = get_route(db, route_id)
     if route is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Route not found')
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='Route not found'
+        )
 
     try:
         update_route(db, route, request)
@@ -98,7 +106,9 @@ def routes_update(
     db.commit()
     route_with_geometry = get_route_with_geometry(db, route.id)
     if route_with_geometry is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Route not found')
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='Route not found'
+        )
 
     return _route_response(route_with_geometry.route, route_with_geometry.geometry)
 
@@ -108,7 +118,9 @@ def routes_delete(route_id: UUID, db: Annotated[Session, Depends(get_db)]) -> Re
     """Удалить маршрут."""
     route = get_route(db, route_id)
     if route is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Route not found')
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='Route not found'
+        )
 
     delete_route(db, route)
     db.commit()

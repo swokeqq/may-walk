@@ -18,7 +18,11 @@ def find_by_local_name(
     local_name: str,
 ) -> list[ElementTree.Element]:
     """Найти XML-элементы без привязки к namespace."""
-    return [child for child in element.iter() if local_name_from_tag(child.tag) == local_name]
+    return [
+        child
+        for child in element.iter()
+        if local_name_from_tag(child.tag) == local_name
+    ]
 
 
 def first_by_local_name(

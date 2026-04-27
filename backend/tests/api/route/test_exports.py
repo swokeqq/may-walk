@@ -4,8 +4,6 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
-from tests.api.route.conftest import create_route
-
 
 def test_route_export_requires_auth(client: TestClient) -> None:
     """Проверить защиту endpoint'а экспорта."""
@@ -16,10 +14,8 @@ def test_route_export_requires_auth(client: TestClient) -> None:
     assert response.status_code == 401
 
 
-def test_route_export_formats(authenticated_client: TestClient) -> None:
+def test_route_export_formats(authenticated_client: TestClient, route_id: str) -> None:
     """Проверить экспорт маршрута в GeoJSON, GPX и KML."""
-    route_id = create_route(authenticated_client)
-
     geojson_response = authenticated_client.get(
         f'/api/routes/{route_id}/export?format=geojson',
     )

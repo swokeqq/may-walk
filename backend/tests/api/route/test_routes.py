@@ -4,8 +4,6 @@ from uuid import uuid4
 
 from fastapi.testclient import TestClient
 
-from tests.api.route.conftest import line_string_geometry
-
 
 def test_routes_require_auth(client: TestClient) -> None:
     """Проверить защиту CRUD endpoint'ов маршрутов."""
@@ -22,13 +20,16 @@ def test_routes_require_auth(client: TestClient) -> None:
     assert {response.status_code for response in responses} == {401}
 
 
-def test_route_crud_without_total_length(authenticated_client: TestClient) -> None:
+def test_route_crud_without_total_length(
+    authenticated_client: TestClient,
+    line_string_geometry: dict[str, object],
+) -> None:
     """Проверить CRUD маршрута без total_length_m в ответах."""
     create_response = authenticated_client.post(
         '/api/routes',
         json={
             'name': 'Route 1',
-            'geometry': line_string_geometry(),
+            'geometry': line_string_geometry,
         },
     )
 

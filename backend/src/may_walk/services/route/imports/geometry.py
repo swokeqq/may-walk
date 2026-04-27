@@ -5,7 +5,10 @@ from typing import Any
 from pydantic import ValidationError
 
 from may_walk.schemas.geometries import GeoJSONGeometry
-from may_walk.services.geometries import GeometryValidationError, normalize_line_geometry
+from may_walk.services.geometries import (
+    GeometryValidationError,
+    normalize_line_geometry,
+)
 from may_walk.services.route.imports.types import RouteImportError
 
 

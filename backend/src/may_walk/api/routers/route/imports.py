@@ -21,7 +21,9 @@ router = APIRouter(
 )
 
 
-@router.post('/import', response_model=RouteResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    '/import', response_model=RouteResponse, status_code=status.HTTP_201_CREATED
+)
 async def routes_import(
     db: Annotated[Session, Depends(get_db)],
     file: Annotated[UploadFile, File()],
@@ -55,7 +57,9 @@ async def routes_import(
     db.commit()
     route_with_geometry = get_route_with_geometry(db, route.id)
     if route_with_geometry is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Route not found')
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='Route not found'
+        )
 
     return _route_response(route_with_geometry.route, route_with_geometry.geometry)
 

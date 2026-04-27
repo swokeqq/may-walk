@@ -28,7 +28,9 @@ def routes_export(
     """Экспортировать маршрут в файл."""
     route_with_geometry = get_route_with_geometry(db, route_id)
     if route_with_geometry is None:
-        raise HTTPException(status_code=status.HTTP_404_NOT_FOUND, detail='Route not found')
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND, detail='Route not found'
+        )
     if route_with_geometry.geometry is None:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,

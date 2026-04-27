@@ -26,22 +26,32 @@ def authenticated_client(client: TestClient) -> TestClient:
     return client
 
 
-def create_route(client: TestClient) -> str:
-    """Создать маршрут через API и вернуть его id."""
-    response = client.post(
-        '/api/routes',
-        json={'name': 'Route for export', 'geometry': line_string_geometry()},
-    )
-    assert response.status_code == 201
-    return response.json()['id']
-
-
+@pytest.fixture
 def line_string_geometry() -> dict[str, object]:
     """Вернуть тестовую LineString-геометрию."""
     return {
         'type': 'LineString',
         'coordinates': [[60.6, 56.83], [60.61, 56.834]],
     }
+
+
+@pytest.fixture
+def route_id(
+    authenticated_client: TestClient,
+    line_string_geometry: dict[str, object],
+) -> str:
+    """Создать маршрут через API и вернуть его id."""
+    return create_route(authenticated_client, line_string_geometry)
+
+
+def create_route(client: TestClient, geometry: dict[str, object]) -> str:
+    """Создать маршрут через API и вернуть его id."""
+    response = client.post(
+        '/api/routes',
+        json={'name': 'Route for export', 'geometry': geometry},
+    )
+    assert response.status_code == 201
+    return response.json()['id']
 
 
 def login(client: TestClient) -> None:

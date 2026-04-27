@@ -4,8 +4,6 @@ import json
 
 from fastapi.testclient import TestClient
 
-from tests.api.route.conftest import line_string_geometry
-
 
 def test_route_import_requires_auth(client: TestClient) -> None:
     """Проверить защиту endpoint'а импорта."""
@@ -14,12 +12,15 @@ def test_route_import_requires_auth(client: TestClient) -> None:
     assert response.status_code == 401
 
 
-def test_route_import_geojson(authenticated_client: TestClient) -> None:
+def test_route_import_geojson(
+    authenticated_client: TestClient,
+    line_string_geometry: dict[str, object],
+) -> None:
     """Проверить импорт маршрута из GeoJSON."""
     payload = {
         'type': 'Feature',
         'properties': {},
-        'geometry': line_string_geometry(),
+        'geometry': line_string_geometry,
     }
 
     response = authenticated_client.post(
@@ -54,7 +55,7 @@ def test_route_import_gpx(authenticated_client: TestClient) -> None:
     assert response.status_code == 201
     assert response.json()['name'] == 'walk'
     assert response.json()['geometry']['coordinates'] == [
-        [[[60.6, 56.83], [60.61, 56.834]]],
+        [[60.6, 56.83], [60.61, 56.834]],
     ]
 
 
@@ -77,18 +78,19 @@ def test_route_import_kml(authenticated_client: TestClient) -> None:
     assert response.status_code == 201
     assert response.json()['name'] == 'walk'
     assert response.json()['geometry']['coordinates'] == [
-        [[[60.6, 56.83], [60.61, 56.834]]],
+        [[60.6, 56.83], [60.61, 56.834]],
     ]
 
 
 def test_route_import_with_snap_returns_error(
     authenticated_client: TestClient,
+    line_string_geometry: dict[str, object],
 ) -> None:
     """Проверить явный отказ от импорта со snap на текущем этапе."""
     response = authenticated_client.post(
         '/api/routes/import',
         data={'snap': 'true'},
-        files={'file': ('route.geojson', json.dumps(line_string_geometry()))},
+        files={'file': ('route.geojson', json.dumps(line_string_geometry))},
     )
 
     assert response.status_code == 400

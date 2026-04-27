@@ -49,7 +49,9 @@ def postgis_geojson_to_schema(value: str | None) -> GeoJSONGeometry | None:
 def _validate_multi_line_string_coordinates(coordinates: object) -> None:
     """Проверить координаты MultiLineString."""
     if not isinstance(coordinates, list) or not coordinates:
-        raise GeometryValidationError('MultiLineString coordinates must be a non-empty list')
+        raise GeometryValidationError(
+            'MultiLineString coordinates must be a non-empty list'
+        )
 
     for line in coordinates:
         _validate_line_string_coordinates(line)
