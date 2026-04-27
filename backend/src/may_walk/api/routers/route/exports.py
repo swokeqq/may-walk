@@ -14,7 +14,7 @@ from may_walk.services.route.exports import export_route_file
 
 router = APIRouter(
     prefix='/api/routes',
-    tags=['route-export'],
+    tags=['route-files'],
     dependencies=[Depends(require_auth)],
 )
 
