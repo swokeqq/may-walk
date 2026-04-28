@@ -52,7 +52,7 @@ def routes_list(db: Annotated[Session, Depends(get_db)]) -> RouteListResponse:
     response_model=RouteResponse,
     status_code=status.HTTP_201_CREATED,
     responses=protected_responses(
-        {status.HTTP_422_UNPROCESSABLE_ENTITY: INVALID_ROUTE_GEOMETRY_RESPONSE}
+        {status.HTTP_422_UNPROCESSABLE_CONTENT: INVALID_ROUTE_GEOMETRY_RESPONSE}
     ),
 )
 def routes_create(
@@ -64,7 +64,7 @@ def routes_create(
         route = create_route(db, request)
     except GeometryValidationError as error:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(error),
         ) from error
 
@@ -105,7 +105,7 @@ def routes_get(
     responses=protected_responses(
         {
             status.HTTP_404_NOT_FOUND: ROUTE_NOT_FOUND_RESPONSE,
-            status.HTTP_422_UNPROCESSABLE_ENTITY: INVALID_ROUTE_GEOMETRY_RESPONSE,
+            status.HTTP_422_UNPROCESSABLE_CONTENT: INVALID_ROUTE_GEOMETRY_RESPONSE,
         }
     ),
 )
@@ -125,7 +125,7 @@ def routes_update(
         update_route(db, route, request)
     except GeometryValidationError as error:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(error),
         ) from error
 

@@ -37,7 +37,7 @@ router = APIRouter(
                     }
                 },
             },
-            status.HTTP_422_UNPROCESSABLE_ENTITY: {
+            status.HTTP_422_UNPROCESSABLE_CONTENT: {
                 'description': 'Невалидный import payload или геометрия маршрута.',
             },
         }
@@ -99,7 +99,7 @@ async def routes_import(
         )
     except (RouteImportError, GeometryValidationError) as error:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(error),
         ) from error
 
