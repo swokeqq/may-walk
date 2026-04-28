@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from sqlalchemy.orm import Session
 
 from may_walk.api.dependencies import get_db, require_auth
+from may_walk.api.responses import protected_responses
 from may_walk.api.routers.route.responses import route_response
 from may_walk.schemas.routes import RouteCreateRequest, RouteResponse
 from may_walk.services.geometries import GeometryValidationError
@@ -24,21 +25,23 @@ router = APIRouter(
     '/import',
     response_model=RouteResponse,
     status_code=status.HTTP_201_CREATED,
-    responses={
-        status.HTTP_400_BAD_REQUEST: {
-            'description': 'Неподдержанный текущий сценарий: snap=true.',
-            'content': {
-                'application/json': {
-                    'example': {
-                        'detail': 'Route import with snap is not supported yet'
+    responses=protected_responses(
+        {
+            status.HTTP_400_BAD_REQUEST: {
+                'description': 'Неподдержанный текущий сценарий: snap=true.',
+                'content': {
+                    'application/json': {
+                        'example': {
+                            'detail': 'Route import with snap is not supported yet'
+                        }
                     }
-                }
+                },
             },
-        },
-        status.HTTP_422_UNPROCESSABLE_ENTITY: {
-            'description': 'Невалидный import payload или геометрия маршрута.',
-        },
-    },
+            status.HTTP_422_UNPROCESSABLE_ENTITY: {
+                'description': 'Невалидный import payload или геометрия маршрута.',
+            },
+        }
+    ),
 )
 async def routes_import(
     db: Annotated[Session, Depends(get_db)],

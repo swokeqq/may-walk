@@ -7,6 +7,11 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from may_walk.api.dependencies import get_db, require_auth
+from may_walk.api.responses import (
+    INVALID_ROUTE_GEOMETRY_RESPONSE,
+    ROUTE_NOT_FOUND_RESPONSE,
+    protected_responses,
+)
 from may_walk.api.routers.route.responses import route_response
 from may_walk.schemas.routes import (
     RouteCreateRequest,
@@ -32,7 +37,7 @@ router = APIRouter(
 )
 
 
-@router.get('', response_model=RouteListResponse)
+@router.get('', response_model=RouteListResponse, responses=protected_responses())
 def routes_list(db: Annotated[Session, Depends(get_db)]) -> RouteListResponse:
     """Вернуть список маршрутов без полной геометрии."""
     return RouteListResponse(
@@ -42,7 +47,14 @@ def routes_list(db: Annotated[Session, Depends(get_db)]) -> RouteListResponse:
     )
 
 
-@router.post('', response_model=RouteResponse, status_code=status.HTTP_201_CREATED)
+@router.post(
+    '',
+    response_model=RouteResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses=protected_responses(
+        {status.HTTP_422_UNPROCESSABLE_ENTITY: INVALID_ROUTE_GEOMETRY_RESPONSE}
+    ),
+)
 def routes_create(
     request: RouteCreateRequest,
     db: Annotated[Session, Depends(get_db)],
@@ -66,7 +78,13 @@ def routes_create(
     return route_response(route_with_geometry.route, route_with_geometry.geometry)
 
 
-@router.get('/{route_id:uuid}', response_model=RouteResponse)
+@router.get(
+    '/{route_id:uuid}',
+    response_model=RouteResponse,
+    responses=protected_responses(
+        {status.HTTP_404_NOT_FOUND: ROUTE_NOT_FOUND_RESPONSE}
+    ),
+)
 def routes_get(
     route_id: UUID,
     db: Annotated[Session, Depends(get_db)],
@@ -81,7 +99,16 @@ def routes_get(
     return route_response(route_with_geometry.route, route_with_geometry.geometry)
 
 
-@router.patch('/{route_id:uuid}', response_model=RouteResponse)
+@router.patch(
+    '/{route_id:uuid}',
+    response_model=RouteResponse,
+    responses=protected_responses(
+        {
+            status.HTTP_404_NOT_FOUND: ROUTE_NOT_FOUND_RESPONSE,
+            status.HTTP_422_UNPROCESSABLE_ENTITY: INVALID_ROUTE_GEOMETRY_RESPONSE,
+        }
+    ),
+)
 def routes_update(
     route_id: UUID,
     request: RouteUpdateRequest,
@@ -112,7 +139,13 @@ def routes_update(
     return route_response(route_with_geometry.route, route_with_geometry.geometry)
 
 
-@router.delete('/{route_id:uuid}', status_code=status.HTTP_204_NO_CONTENT)
+@router.delete(
+    '/{route_id:uuid}',
+    status_code=status.HTTP_204_NO_CONTENT,
+    responses=protected_responses(
+        {status.HTTP_404_NOT_FOUND: ROUTE_NOT_FOUND_RESPONSE}
+    ),
+)
 def routes_delete(route_id: UUID, db: Annotated[Session, Depends(get_db)]) -> Response:
     """Удалить маршрут."""
     route = get_route(db, route_id)

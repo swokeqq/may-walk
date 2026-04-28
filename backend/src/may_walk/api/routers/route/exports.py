@@ -7,6 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from sqlalchemy.orm import Session
 
 from may_walk.api.dependencies import get_db, require_auth
+from may_walk.api.responses import ROUTE_NOT_FOUND_RESPONSE, protected_responses
 from may_walk.models.route import Route
 from may_walk.schemas.routes import RouteExportFormat
 from may_walk.services.route.crud import get_route_with_geometry
@@ -21,38 +22,42 @@ router = APIRouter(
 
 @router.get(
     '/{route_id:uuid}/export',
-    responses={
-        status.HTTP_200_OK: {
-            'description': (
-                'Файл маршрута в формате geojson, gpx или kml. Ответ содержит '
-                'заголовок Content-Disposition: attachment.'
-            ),
-            'headers': {
-                'Content-Disposition': {
-                    'description': (
-                        'attachment; filename="route-{route_id}.{extension}"'
-                    ),
-                    'schema': {'type': 'string'},
-                }
-            },
-            'content': {
-                'application/geo+json': {'schema': {'type': 'string'}},
-                'application/gpx+xml': {'schema': {'type': 'string'}},
-                'application/vnd.google-earth.kml+xml': {
-                    'schema': {'type': 'string'}
+    responses=protected_responses(
+        {
+            status.HTTP_200_OK: {
+                'description': (
+                    'Файл маршрута в формате geojson, gpx или kml. Ответ '
+                    'содержит заголовок Content-Disposition: attachment.'
+                ),
+                'headers': {
+                    'Content-Disposition': {
+                        'description': (
+                            'attachment; filename="route-{route_id}.{extension}"'
+                        ),
+                        'schema': {'type': 'string'},
+                    }
+                },
+                'content': {
+                    'application/geo+json': {'schema': {'type': 'string'}},
+                    'application/gpx+xml': {'schema': {'type': 'string'}},
+                    'application/vnd.google-earth.kml+xml': {
+                        'schema': {'type': 'string'}
+                    },
                 },
             },
-        },
-        status.HTTP_400_BAD_REQUEST: {
-            'description': 'Маршрут существует, но у него нет геометрии для экспорта.',
-            'content': {
-                'application/json': {
-                    'example': {'detail': {'error': 'Route has no geometry'}}
-                }
+            status.HTTP_400_BAD_REQUEST: {
+                'description': (
+                    'Маршрут существует, но у него нет геометрии для экспорта.'
+                ),
+                'content': {
+                    'application/json': {
+                        'example': {'detail': {'error': 'Route has no geometry'}}
+                    }
+                },
             },
-        },
-        status.HTTP_404_NOT_FOUND: {'description': 'Маршрут не найден.'},
-    },
+            status.HTTP_404_NOT_FOUND: ROUTE_NOT_FOUND_RESPONSE,
+        }
+    ),
 )
 def routes_export(
     route_id: UUID,
