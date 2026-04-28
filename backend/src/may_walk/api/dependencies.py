@@ -4,7 +4,8 @@ from collections.abc import Generator
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import Cookie, Depends, HTTPException, status
+from fastapi import Depends, HTTPException, Security, status
+from fastapi.security import APIKeyCookie
 from sqlalchemy.orm import Session
 
 from may_walk.db.session import SessionLocal
@@ -13,6 +14,11 @@ from may_walk.services.authentication import get_valid_auth_session
 
 AUTH_COOKIE_NAME = 'mw_session'
 AUTH_COOKIE_PATH = '/'
+auth_cookie = APIKeyCookie(
+    name=AUTH_COOKIE_NAME,
+    scheme_name=AUTH_COOKIE_NAME,
+    auto_error=False,
+)
 
 
 def get_db() -> Generator[Session]:
@@ -23,7 +29,7 @@ def get_db() -> Generator[Session]:
 
 def require_auth(
     db: Annotated[Session, Depends(get_db)],
-    session_id: Annotated[str | None, Cookie(alias=AUTH_COOKIE_NAME)] = None,
+    session_id: Annotated[str | None, Security(auth_cookie)] = None,
 ) -> AuthSession:
     """Потребовать валидную auth-сессию для защищенного endpoint'а."""
     if session_id is None:

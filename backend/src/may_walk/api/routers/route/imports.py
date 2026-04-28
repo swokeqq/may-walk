@@ -7,8 +7,8 @@ from fastapi import APIRouter, Depends, File, Form, HTTPException, UploadFile, s
 from sqlalchemy.orm import Session
 
 from may_walk.api.dependencies import get_db, require_auth
-from may_walk.models.route import Route
-from may_walk.schemas.geometries import GeoJSONGeometry
+from may_walk.api.responses import protected_responses
+from may_walk.api.routers.route.responses import route_response
 from may_walk.schemas.routes import RouteCreateRequest, RouteResponse
 from may_walk.services.geometries import GeometryValidationError
 from may_walk.services.route.crud import create_route, get_route_with_geometry
@@ -22,15 +22,63 @@ router = APIRouter(
 
 
 @router.post(
-    '/import', response_model=RouteResponse, status_code=status.HTTP_201_CREATED
+    '/import',
+    response_model=RouteResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses=protected_responses(
+        {
+            status.HTTP_400_BAD_REQUEST: {
+                'description': 'Неподдержанный текущий сценарий: snap=true.',
+                'content': {
+                    'application/json': {
+                        'example': {
+                            'detail': 'Route import with snap is not supported yet'
+                        }
+                    }
+                },
+            },
+            status.HTTP_422_UNPROCESSABLE_CONTENT: {
+                'description': 'Невалидный import payload или геометрия маршрута.',
+            },
+        }
+    ),
 )
 async def routes_import(
     db: Annotated[Session, Depends(get_db)],
-    file: Annotated[UploadFile, File()],
-    name: Annotated[str | None, Form()] = None,
-    snap: Annotated[bool, Form()] = False,
+    file: Annotated[
+        UploadFile,
+        File(
+            description=(
+                'Файл маршрута. Поддерживаемые расширения: .geojson, .json, .gpx, .kml.'
+            )
+        ),
+    ],
+    name: Annotated[
+        str | None,
+        Form(
+            description=(
+                'Название создаваемого маршрута. Если не задано, используется имя '
+                'файла без расширения.'
+            ),
+            examples=['Маршрут 1'],
+        ),
+    ] = None,
+    snap: Annotated[
+        bool,
+        Form(
+            description=(
+                'Флаг импорта с привязкой к дорожному графу. Текущее поведение: '
+                'snap=true возвращает 400, snap import еще не поддержан.'
+            ),
+            examples=[False],
+        ),
+    ] = False,
 ) -> RouteResponse:
-    """Импортировать маршрут из файла без snap."""
+    """Импортировать маршрут из файла.
+
+    Поддерживаемые форматы: .geojson, .json, .gpx, .kml.
+    При snap=true возвращает 400: snap import еще не поддержан.
+    """
     if snap:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
@@ -50,7 +98,7 @@ async def routes_import(
         )
     except (RouteImportError, GeometryValidationError) as error:
         raise HTTPException(
-            status_code=status.HTTP_422_UNPROCESSABLE_ENTITY,
+            status_code=status.HTTP_422_UNPROCESSABLE_CONTENT,
             detail=str(error),
         ) from error
 
@@ -61,18 +109,7 @@ async def routes_import(
             status_code=status.HTTP_404_NOT_FOUND, detail='Route not found'
         )
 
-    return _route_response(route_with_geometry.route, route_with_geometry.geometry)
-
-
-def _route_response(route: Route, geometry: GeoJSONGeometry | None) -> RouteResponse:
-    """Собрать API-ответ маршрута."""
-    return RouteResponse(
-        id=route.id,
-        name=route.name,
-        geometry=geometry,
-        created_at=route.created_at,
-        updated_at=route.updated_at,
-    )
+    return route_response(route_with_geometry.route, route_with_geometry.geometry)
 
 
 def _route_name_from_filename(filename: str) -> str:
