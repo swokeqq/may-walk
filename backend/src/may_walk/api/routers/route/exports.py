@@ -19,13 +19,57 @@ router = APIRouter(
 )
 
 
-@router.get('/{route_id:uuid}/export')
+@router.get(
+    '/{route_id:uuid}/export',
+    responses={
+        status.HTTP_200_OK: {
+            'description': (
+                'Файл маршрута в формате geojson, gpx или kml. Ответ содержит '
+                'заголовок Content-Disposition: attachment.'
+            ),
+            'headers': {
+                'Content-Disposition': {
+                    'description': (
+                        'attachment; filename="route-{route_id}.{extension}"'
+                    ),
+                    'schema': {'type': 'string'},
+                }
+            },
+            'content': {
+                'application/geo+json': {'schema': {'type': 'string'}},
+                'application/gpx+xml': {'schema': {'type': 'string'}},
+                'application/vnd.google-earth.kml+xml': {
+                    'schema': {'type': 'string'}
+                },
+            },
+        },
+        status.HTTP_400_BAD_REQUEST: {
+            'description': 'Маршрут существует, но у него нет геометрии для экспорта.',
+            'content': {
+                'application/json': {
+                    'example': {'detail': {'error': 'Route has no geometry'}}
+                }
+            },
+        },
+        status.HTTP_404_NOT_FOUND: {'description': 'Маршрут не найден.'},
+    },
+)
 def routes_export(
     route_id: UUID,
-    export_format: Annotated[RouteExportFormat, Query(alias='format')],
+    export_format: Annotated[
+        RouteExportFormat,
+        Query(
+            alias='format',
+            description='Формат экспортируемого файла: geojson, gpx или kml.',
+        ),
+    ],
     db: Annotated[Session, Depends(get_db)],
 ) -> Response:
-    """Экспортировать маршрут в файл."""
+    """Экспортировать маршрут в файл.
+
+    Query format поддерживает значения geojson, gpx и kml.
+    Ответ возвращается как attachment через Content-Disposition.
+    """
     route_with_geometry = get_route_with_geometry(db, route_id)
     if route_with_geometry is None:
         raise HTTPException(
