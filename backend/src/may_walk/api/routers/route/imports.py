@@ -49,8 +49,7 @@ async def routes_import(
         UploadFile,
         File(
             description=(
-                'Файл маршрута. Поддерживаемые расширения: .geojson, .json, '
-                '.gpx, .kml.'
+                'Файл маршрута. Поддерживаемые расширения: .geojson, .json, .gpx, .kml.'
             )
         ),
     ],

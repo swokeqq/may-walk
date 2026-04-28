@@ -157,4 +157,3 @@ def routes_delete(route_id: UUID, db: Annotated[Session, Depends(get_db)]) -> Re
     delete_route(db, route)
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-

@@ -129,6 +129,7 @@ def test_logout_revokes_session_and_clears_cookie(client: TestClient) -> None:
         assert auth_session is not None
         assert auth_session.revoked_at is not None
 
+
 def _create_admin(password: str) -> UUID:
     """Создать администратора для теста."""
     with SessionLocal() as session:

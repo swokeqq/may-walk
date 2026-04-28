@@ -9,8 +9,7 @@ GeoJSONPosition = Annotated[
     tuple[float, float],
     Field(
         description=(
-            'Позиция GeoJSON в системе координат EPSG:4326: '
-            '[longitude, latitude].'
+            'Позиция GeoJSON в системе координат EPSG:4326: [longitude, latitude].'
         ),
         examples=[[37.6173, 55.7558]],
     ),
@@ -49,10 +48,15 @@ class GeoJSONGeometry(BaseModel):
                 },
                 {
                     'type': 'MultiLineString',
-                    'coordinates': [[[
-                        37.6173,
-                        55.7558,
-                    ], [37.618, 55.7562]]],
+                    'coordinates': [
+                        [
+                            [
+                                37.6173,
+                                55.7558,
+                            ],
+                            [37.618, 55.7562],
+                        ]
+                    ],
                 },
             ],
         }
@@ -61,12 +65,12 @@ class GeoJSONGeometry(BaseModel):
     type: GeoJSONLineType = Field(
         description='Тип GeoJSON-геометрии: LineString или MultiLineString.'
     )
-    coordinates: (
-        GeoJSONLineStringCoordinates | GeoJSONMultiLineStringCoordinates
-    ) = Field(
-        description=(
-            'Координаты GeoJSON в EPSG:4326. LineString содержит массив позиций, '
-            'MultiLineString содержит массив линий.'
+    coordinates: GeoJSONLineStringCoordinates | GeoJSONMultiLineStringCoordinates = (
+        Field(
+            description=(
+                'Координаты GeoJSON в EPSG:4326. LineString содержит массив позиций, '
+                'MultiLineString содержит массив линий.'
+            )
         )
     )
 
@@ -83,10 +87,12 @@ class GeoJSONMultiLineStringGeometry(BaseModel):
             'examples': [
                 {
                     'type': 'MultiLineString',
-                    'coordinates': [[
-                        [37.6173, 55.7558],
-                        [37.618, 55.7562],
-                    ]],
+                    'coordinates': [
+                        [
+                            [37.6173, 55.7558],
+                            [37.618, 55.7562],
+                        ]
+                    ],
                 }
             ],
         }
