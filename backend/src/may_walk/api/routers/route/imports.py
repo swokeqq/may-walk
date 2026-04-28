@@ -21,15 +21,62 @@ router = APIRouter(
 
 
 @router.post(
-    '/import', response_model=RouteResponse, status_code=status.HTTP_201_CREATED
+    '/import',
+    response_model=RouteResponse,
+    status_code=status.HTTP_201_CREATED,
+    responses={
+        status.HTTP_400_BAD_REQUEST: {
+            'description': 'Неподдержанный текущий сценарий: snap=true.',
+            'content': {
+                'application/json': {
+                    'example': {
+                        'detail': 'Route import with snap is not supported yet'
+                    }
+                }
+            },
+        },
+        status.HTTP_422_UNPROCESSABLE_ENTITY: {
+            'description': 'Невалидный import payload или геометрия маршрута.',
+        },
+    },
 )
 async def routes_import(
     db: Annotated[Session, Depends(get_db)],
-    file: Annotated[UploadFile, File()],
-    name: Annotated[str | None, Form()] = None,
-    snap: Annotated[bool, Form()] = False,
+    file: Annotated[
+        UploadFile,
+        File(
+            description=(
+                'Файл маршрута. Поддерживаемые расширения: .geojson, .json, '
+                '.gpx, .kml.'
+            )
+        ),
+    ],
+    name: Annotated[
+        str | None,
+        Form(
+            description=(
+                'Название создаваемого маршрута. Если не задано, используется имя '
+                'файла без расширения.'
+            ),
+            examples=['Маршрут 1'],
+        ),
+    ] = None,
+    snap: Annotated[
+        bool,
+        Form(
+            description=(
+                'Флаг импорта с привязкой к дорожному графу. Текущее поведение: '
+                'snap=true возвращает 400, snap import еще не поддержан.'
+            ),
+            examples=[False],
+        ),
+    ] = False,
 ) -> RouteResponse:
-    """Импортировать маршрут из файла без snap."""
+    """Импортировать маршрут из файла.
+
+    Поддерживаемые форматы: .geojson, .json, .gpx, .kml.
+    При snap=true возвращает 400: snap import еще не поддержан.
+    """
     if snap:
         raise HTTPException(
             status_code=status.HTTP_400_BAD_REQUEST,
