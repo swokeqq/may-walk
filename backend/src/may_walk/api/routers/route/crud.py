@@ -7,8 +7,7 @@ from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from may_walk.api.dependencies import get_db, require_auth
-from may_walk.models.route import Route
-from may_walk.schemas.geometries import GeoJSONGeometry
+from may_walk.api.routers.route.responses import route_response
 from may_walk.schemas.routes import (
     RouteCreateRequest,
     RouteListItemResponse,
@@ -64,7 +63,7 @@ def routes_create(
             status_code=status.HTTP_404_NOT_FOUND, detail='Route not found'
         )
 
-    return _route_response(route_with_geometry.route, route_with_geometry.geometry)
+    return route_response(route_with_geometry.route, route_with_geometry.geometry)
 
 
 @router.get('/{route_id:uuid}', response_model=RouteResponse)
@@ -79,7 +78,7 @@ def routes_get(
             status_code=status.HTTP_404_NOT_FOUND, detail='Route not found'
         )
 
-    return _route_response(route_with_geometry.route, route_with_geometry.geometry)
+    return route_response(route_with_geometry.route, route_with_geometry.geometry)
 
 
 @router.patch('/{route_id:uuid}', response_model=RouteResponse)
@@ -110,7 +109,7 @@ def routes_update(
             status_code=status.HTTP_404_NOT_FOUND, detail='Route not found'
         )
 
-    return _route_response(route_with_geometry.route, route_with_geometry.geometry)
+    return route_response(route_with_geometry.route, route_with_geometry.geometry)
 
 
 @router.delete('/{route_id:uuid}', status_code=status.HTTP_204_NO_CONTENT)
@@ -126,13 +125,3 @@ def routes_delete(route_id: UUID, db: Annotated[Session, Depends(get_db)]) -> Re
     db.commit()
     return Response(status_code=status.HTTP_204_NO_CONTENT)
 
-
-def _route_response(route: Route, geometry: GeoJSONGeometry | None) -> RouteResponse:
-    """Собрать API-ответ маршрута."""
-    return RouteResponse(
-        id=route.id,
-        name=route.name,
-        geometry=geometry,
-        created_at=route.created_at,
-        updated_at=route.updated_at,
-    )

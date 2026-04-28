@@ -69,3 +69,35 @@ class GeoJSONGeometry(BaseModel):
             'MultiLineString содержит массив линий.'
         )
     )
+
+
+class GeoJSONMultiLineStringGeometry(BaseModel):
+    """Нормализованная GeoJSON MultiLineString геометрия маршрута."""
+
+    model_config = ConfigDict(
+        json_schema_extra={
+            'description': (
+                'GeoJSON MultiLineString в EPSG:4326. Порядок координат: '
+                '[longitude, latitude].'
+            ),
+            'examples': [
+                {
+                    'type': 'MultiLineString',
+                    'coordinates': [[
+                        [37.6173, 55.7558],
+                        [37.618, 55.7562],
+                    ]],
+                }
+            ],
+        }
+    )
+
+    type: Literal['MultiLineString'] = Field(
+        description='Тип GeoJSON-геометрии ответа: всегда MultiLineString.'
+    )
+    coordinates: GeoJSONMultiLineStringCoordinates = Field(
+        description=(
+            'Координаты MultiLineString в EPSG:4326: массив линий, каждая линия '
+            'содержит позиции [longitude, latitude].'
+        )
+    )
