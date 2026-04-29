@@ -72,8 +72,15 @@ def routes_export(
 ) -> Response:
     """Экспортировать маршрут в файл.
 
-    Query format поддерживает значения geojson, gpx и kml.
-    Ответ возвращается как attachment через Content-Disposition.
+    Обязательный query-параметр `format` поддерживает значения `geojson`,
+    `gpx` и `kml`.
+
+    Экспорт возможен только для маршрута с заданной геометрией. Если маршрут
+    существует, но `geometry` не задана, возвращается `400`. Если маршрут с
+    `route_id` не найден, возвращается `404`.
+
+    Успешный ответ возвращает файл, а не JSON. Имя файла передается в заголовке
+    `Content-Disposition` в формате `route-{route_id}.{extension}`.
     """
     route_with_geometry = get_route_with_geometry(db, route_id)
     if route_with_geometry is None:
