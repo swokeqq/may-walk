@@ -40,7 +40,16 @@ def login(
     response: Response,
     db: Annotated[Session, Depends(get_db)],
 ) -> AuthStatusResponse | JSONResponse:
-    """Войти по паролю администратора."""
+    """Войти по паролю пользователя.
+
+    В системе поддерживается один пользователь, поэтому в теле запроса
+    передается только поле `password`. При успешной проверке создается серверная
+    auth-сессия и в ответе устанавливается `HttpOnly` cookie `mw_session` с
+    путем `/`.
+
+    Успешный ответ возвращает `authenticated: true`. При неверном пароле
+    возвращается `401` и `authenticated: false`; cookie не устанавливается.
+    """
     admin = authenticate_admin(db, request.password)
     if admin is None:
         return _unauthenticated_response()
