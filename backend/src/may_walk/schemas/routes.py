@@ -40,9 +40,15 @@ class RouteUpdateRequest(BaseModel):
     geometry: GeoJSONGeometry | None = Field(
         default=None,
         description=(
-            'Новая геометрия маршрута в EPSG:4326. На входе допускаются '
-            'LineString и MultiLineString; LineString сохраняется как '
-            'MultiLineString. Передайте null, чтобы удалить геометрию.'
+            'Новая геометрия маршрута в EPSG:4326. Если поле отсутствует, '
+            'геометрия маршрута не меняется. Если передано `geometry: null`, '
+            'геометрия удаляется. Если передана GeoJSON-геометрия, она '
+            'заменяет всю геометрию маршрута целиком. Endpoint не добавляет '
+            'линию инкрементально: для добавления линии клиент должен '
+            'отправить полный обновленный MultiLineString и не вызывать '
+            'PATCH на каждое промежуточное действие рисования линии. На '
+            'входе допускаются LineString и MultiLineString; LineString '
+            'сохраняется как MultiLineString.'
         ),
     )
 
