@@ -60,7 +60,7 @@ class RouteListItemResponse(BaseModel):
 class RouteListResponse(BaseModel):
     """Ответ со списком маршрутов."""
 
-    items: list[RouteListItemResponse]
+    items: list[RouteListItemResponse] = Field(description='Список маршрутов.')
 
 
 class RouteResponse(RouteListItemResponse):

@@ -49,7 +49,8 @@ async def routes_import(
         UploadFile,
         File(
             description=(
-                'Файл маршрута. Поддерживаемые расширения: .geojson, .json, .gpx, .kml.'
+                'Файл маршрута. Поддерживаемые расширения: `.geojson`, `.json`, '
+                '`.gpx`, `.kml`.'
             )
         ),
     ],
@@ -57,8 +58,8 @@ async def routes_import(
         str | None,
         Form(
             description=(
-                'Название создаваемого маршрута. Если не задано, используется имя '
-                'файла без расширения.'
+                'Название создаваемого маршрута. Если не задано, используется '
+                'имя файла без расширения.'
             ),
             examples=['Маршрут 1'],
         ),
@@ -68,7 +69,7 @@ async def routes_import(
         Form(
             description=(
                 'Флаг импорта с привязкой к дорожному графу. Текущее поведение: '
-                'snap=true возвращает 400, snap import еще не поддержан.'
+                '`snap=true` возвращает `400`, snap import еще не поддержан.'
             ),
             examples=[False],
         ),

@@ -26,8 +26,8 @@ router = APIRouter(
         {
             status.HTTP_200_OK: {
                 'description': (
-                    'Файл маршрута в формате geojson, gpx или kml. Ответ '
-                    'содержит заголовок Content-Disposition: attachment.'
+                    'Файл маршрута в формате `geojson`, `gpx` или `kml`. Ответ '
+                    'содержит заголовок `Content-Disposition: attachment`.'
                 ),
                 'headers': {
                     'Content-Disposition': {
@@ -65,7 +65,7 @@ def routes_export(
         RouteExportFormat,
         Query(
             alias='format',
-            description='Формат экспортируемого файла: geojson, gpx или kml.',
+            description='Формат экспортируемого файла: `geojson`, `gpx` или `kml`.',
         ),
     ],
     db: Annotated[Session, Depends(get_db)],
