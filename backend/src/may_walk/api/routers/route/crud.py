@@ -39,7 +39,13 @@ router = APIRouter(
 
 @router.get('', response_model=RouteListResponse, responses=protected_responses())
 def routes_list(db: Annotated[Session, Depends(get_db)]) -> RouteListResponse:
-    """Вернуть список маршрутов без полной геометрии."""
+    """Вернуть список маршрутов без полной геометрии.
+
+    Поле `geometry` в ответе не возвращается; для получения полной геометрии
+    используйте `GET /api/routes/{route_id}`.
+
+    Маршруты возвращаются в порядке создания.
+    """
     return RouteListResponse(
         items=[
             RouteListItemResponse.model_validate(route) for route in list_routes(db)
@@ -59,7 +65,14 @@ def routes_create(
     request: RouteCreateRequest,
     db: Annotated[Session, Depends(get_db)],
 ) -> RouteResponse:
-    """Создать маршрут."""
+    """Создать новый маршрут.
+
+    Поведение поля `geometry`:
+    - если поле отсутствует, маршрут создается без геометрии;
+    - если передано `geometry: null`, маршрут создается без геометрии;
+    - если передана GeoJSON-геометрия, она задает всю начальную геометрию
+      маршрута целиком; `LineString` нормализуется в `MultiLineString`.
+    """
     try:
         route = create_route(db, request)
     except GeometryValidationError as error:
@@ -89,7 +102,14 @@ def routes_get(
     route_id: UUID,
     db: Annotated[Session, Depends(get_db)],
 ) -> RouteResponse:
-    """Вернуть маршрут с полной геометрией."""
+    """Вернуть маршрут с полной геометрией.
+
+    Ответ содержит поля маршрута и `geometry`. Если геометрия не задана,
+    `geometry` возвращается как `null`. Если геометрия задана, она возвращается
+    как `MultiLineString` в EPSG:4326 с координатами `[longitude, latitude]`.
+
+    Если маршрут с `route_id` не найден, возвращается `404`.
+    """
     route_with_geometry = get_route_with_geometry(db, route_id)
     if route_with_geometry is None:
         raise HTTPException(
@@ -114,7 +134,22 @@ def routes_update(
     request: RouteUpdateRequest,
     db: Annotated[Session, Depends(get_db)],
 ) -> RouteResponse:
-    """Обновить маршрут."""
+    """Обновить маршрут.
+
+    Поведение поля `name`:
+    - если поле отсутствует, название маршрута не меняется;
+    - если передано `name: null`, название маршрута не меняется;
+    - если передана строка, она заменяет название маршрута целиком.
+
+    Поведение поля `geometry`:
+    - если поле отсутствует, геометрия маршрута не меняется;
+    - если передано `geometry: null`, геометрия удаляется;
+    - если передана GeoJSON-геометрия, она заменяет всю геометрию маршрута
+      целиком.
+
+    Endpoint не добавляет линию инкрементально. Для добавления линии клиент
+    должен отправить полный обновленный `MultiLineString`.
+    """
     route = get_route(db, route_id)
     if route is None:
         raise HTTPException(
@@ -147,7 +182,11 @@ def routes_update(
     ),
 )
 def routes_delete(route_id: UUID, db: Annotated[Session, Depends(get_db)]) -> Response:
-    """Удалить маршрут."""
+    """Удалить маршрут.
+
+    При успешном удалении возвращается `204` без тела ответа. Если маршрут с
+    `route_id` не найден, возвращается `404`.
+    """
     route = get_route(db, route_id)
     if route is None:
         raise HTTPException(

@@ -20,10 +20,7 @@ class RouteCreateRequest(BaseModel):
     )
     geometry: GeoJSONGeometry | None = Field(
         default=None,
-        description=(
-            'Геометрия маршрута в EPSG:4326. На входе допускаются LineString и '
-            'MultiLineString; LineString сохраняется как MultiLineString.'
-        ),
+        description='Начальная геометрия маршрута в EPSG:4326.',
     )
 
 
@@ -39,11 +36,7 @@ class RouteUpdateRequest(BaseModel):
     )
     geometry: GeoJSONGeometry | None = Field(
         default=None,
-        description=(
-            'Новая геометрия маршрута в EPSG:4326. На входе допускаются '
-            'LineString и MultiLineString; LineString сохраняется как '
-            'MultiLineString. Передайте null, чтобы удалить геометрию.'
-        ),
+        description='Новая геометрия маршрута в EPSG:4326.',
     )
 
 
@@ -67,18 +60,14 @@ class RouteListItemResponse(BaseModel):
 class RouteListResponse(BaseModel):
     """Ответ со списком маршрутов."""
 
-    items: list[RouteListItemResponse]
+    items: list[RouteListItemResponse] = Field(description='Список маршрутов.')
 
 
 class RouteResponse(RouteListItemResponse):
     """Ответ с маршрутом и полной геометрией."""
 
     geometry: GeoJSONMultiLineStringGeometry | None = Field(
-        description=(
-            'Нормализованная геометрия маршрута в EPSG:4326. Если геометрия '
-            'задана, ответ содержит MultiLineString с координатами '
-            '[longitude, latitude].'
-        ),
+        description='Нормализованная геометрия маршрута в EPSG:4326.',
     )
 
 

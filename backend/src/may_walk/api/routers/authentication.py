@@ -40,7 +40,16 @@ def login(
     response: Response,
     db: Annotated[Session, Depends(get_db)],
 ) -> AuthStatusResponse | JSONResponse:
-    """Войти по паролю администратора."""
+    """Войти по паролю пользователя.
+
+    В системе поддерживается один пользователь, поэтому в теле запроса
+    передается только поле `password`. При успешной проверке создается серверная
+    auth-сессия и в ответе устанавливается `HttpOnly` cookie `mw_session` с
+    путем `/`.
+
+    Успешный ответ возвращает `authenticated: true`. При неверном пароле
+    возвращается `401` и `authenticated: false`; cookie не устанавливается.
+    """
     admin = authenticate_admin(db, request.password)
     if admin is None:
         return _unauthenticated_response()
@@ -66,9 +75,22 @@ def login(
 )
 def auth_status(
     db: Annotated[Session, Depends(get_db)],
-    session_id: Annotated[str | None, Cookie(alias=AUTH_COOKIE_NAME)] = None,
+    session_id: Annotated[
+        str | None,
+        Cookie(
+            alias=AUTH_COOKIE_NAME,
+            description='Auth-cookie текущей сессии.',
+        ),
+    ] = None,
 ) -> AuthStatusResponse | JSONResponse:
-    """Вернуть статус текущей auth-сессии."""
+    """Вернуть статус текущей auth-сессии.
+
+    Endpoint читает cookie `mw_session`. Если cookie содержит валидную сессию,
+    возвращается `authenticated: true`.
+
+    Если cookie отсутствует, не является UUID или сессия истекла/отозвана,
+    возвращается `401` и `authenticated: false`.
+    """
     if session_id is None:
         return _unauthenticated_response()
 
@@ -87,9 +109,23 @@ def auth_status(
 def logout(
     response: Response,
     db: Annotated[Session, Depends(get_db)],
-    session_id: Annotated[str | None, Cookie(alias=AUTH_COOKIE_NAME)] = None,
+    session_id: Annotated[
+        str | None,
+        Cookie(
+            alias=AUTH_COOKIE_NAME,
+            description='Auth-cookie текущей сессии.',
+        ),
+    ] = None,
 ) -> Response:
-    """Выйти из текущей auth-сессии."""
+    """Выйти из текущей auth-сессии.
+
+    Endpoint читает cookie `mw_session`. Если cookie содержит валидную сессию,
+    эта сессия отзывается на сервере.
+
+    Если cookie отсутствует, не является UUID или сессия уже невалидна, ошибка
+    не возвращается. В любом случае endpoint удаляет cookie `mw_session` на
+    клиенте и возвращает `204` без тела ответа.
+    """
     if session_id is not None:
         try:
             parsed_session_id = UUID(session_id)
