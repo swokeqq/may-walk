@@ -109,9 +109,23 @@ def auth_status(
 def logout(
     response: Response,
     db: Annotated[Session, Depends(get_db)],
-    session_id: Annotated[str | None, Cookie(alias=AUTH_COOKIE_NAME)] = None,
+    session_id: Annotated[
+        str | None,
+        Cookie(
+            alias=AUTH_COOKIE_NAME,
+            description='Auth-cookie текущей сессии.',
+        ),
+    ] = None,
 ) -> Response:
-    """Выйти из текущей auth-сессии."""
+    """Выйти из текущей auth-сессии.
+
+    Endpoint читает cookie `mw_session`. Если cookie содержит валидную сессию,
+    эта сессия отзывается на сервере.
+
+    Если cookie отсутствует, не является UUID или сессия уже невалидна, ошибка
+    не возвращается. В любом случае endpoint удаляет cookie `mw_session` на
+    клиенте и возвращает `204` без тела ответа.
+    """
     if session_id is not None:
         try:
             parsed_session_id = UUID(session_id)
