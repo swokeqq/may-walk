@@ -59,7 +59,14 @@ def routes_create(
     request: RouteCreateRequest,
     db: Annotated[Session, Depends(get_db)],
 ) -> RouteResponse:
-    """Создать маршрут."""
+    """Создать новый маршрут.
+
+    Поведение поля `geometry`:
+    - если поле отсутствует, маршрут создается без геометрии;
+    - если передано `geometry: null`, маршрут создается без геометрии;
+    - если передана GeoJSON-геометрия, она задает всю начальную геометрию
+      маршрута целиком; `LineString` нормализуется в `MultiLineString`.
+    """
     try:
         route = create_route(db, request)
     except GeometryValidationError as error:
@@ -123,9 +130,7 @@ def routes_update(
       целиком.
 
     Endpoint не добавляет линию инкрементально. Для добавления линии клиент
-    должен отправить полный обновленный `MultiLineString`. Frontend не должен
-    вызывать PATCH на каждое промежуточное действие рисования линии: это может
-    привести к зависанию или плохой отзывчивости интерфейса.
+    должен отправить полный обновленный `MultiLineString`.
     """
     route = get_route(db, route_id)
     if route is None:
