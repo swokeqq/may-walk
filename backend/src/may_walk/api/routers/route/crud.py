@@ -177,7 +177,11 @@ def routes_update(
     ),
 )
 def routes_delete(route_id: UUID, db: Annotated[Session, Depends(get_db)]) -> Response:
-    """Удалить маршрут."""
+    """Удалить маршрут.
+
+    При успешном удалении возвращается `204` без тела ответа. Если маршрут с
+    `route_id` не найден, возвращается `404`.
+    """
     route = get_route(db, route_id)
     if route is None:
         raise HTTPException(
