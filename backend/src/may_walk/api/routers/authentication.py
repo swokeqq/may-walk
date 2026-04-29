@@ -75,9 +75,22 @@ def login(
 )
 def auth_status(
     db: Annotated[Session, Depends(get_db)],
-    session_id: Annotated[str | None, Cookie(alias=AUTH_COOKIE_NAME)] = None,
+    session_id: Annotated[
+        str | None,
+        Cookie(
+            alias=AUTH_COOKIE_NAME,
+            description='Auth-cookie текущей сессии.',
+        ),
+    ] = None,
 ) -> AuthStatusResponse | JSONResponse:
-    """Вернуть статус текущей auth-сессии."""
+    """Вернуть статус текущей auth-сессии.
+
+    Endpoint читает cookie `mw_session`. Если cookie содержит валидную сессию,
+    возвращается `authenticated: true`.
+
+    Если cookie отсутствует, не является UUID или сессия истекла/отозвана,
+    возвращается `401` и `authenticated: false`.
+    """
     if session_id is None:
         return _unauthenticated_response()
 
