@@ -67,11 +67,7 @@ class RouteResponse(RouteListItemResponse):
     """Ответ с маршрутом и полной геометрией."""
 
     geometry: GeoJSONMultiLineStringGeometry | None = Field(
-        description=(
-            'Нормализованная геометрия маршрута в EPSG:4326. Если геометрия '
-            'задана, ответ содержит MultiLineString с координатами '
-            '[longitude, latitude].'
-        ),
+        description='Нормализованная геометрия маршрута в EPSG:4326.',
     )
 
 

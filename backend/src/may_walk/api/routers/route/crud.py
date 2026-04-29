@@ -102,7 +102,14 @@ def routes_get(
     route_id: UUID,
     db: Annotated[Session, Depends(get_db)],
 ) -> RouteResponse:
-    """Вернуть маршрут с полной геометрией."""
+    """Вернуть маршрут с полной геометрией.
+
+    Ответ содержит поля маршрута и `geometry`. Если геометрия не задана,
+    `geometry` возвращается как `null`. Если геометрия задана, она возвращается
+    как `MultiLineString` в EPSG:4326 с координатами `[longitude, latitude]`.
+
+    Если маршрут с `route_id` не найден, возвращается `404`.
+    """
     route_with_geometry = get_route_with_geometry(db, route_id)
     if route_with_geometry is None:
         raise HTTPException(
