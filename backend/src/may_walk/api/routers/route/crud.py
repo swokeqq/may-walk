@@ -39,7 +39,13 @@ router = APIRouter(
 
 @router.get('', response_model=RouteListResponse, responses=protected_responses())
 def routes_list(db: Annotated[Session, Depends(get_db)]) -> RouteListResponse:
-    """Вернуть список маршрутов без полной геометрии."""
+    """Вернуть список маршрутов без полной геометрии.
+
+    Поле `geometry` в ответе не возвращается; для получения полной геометрии
+    используйте `GET /api/routes/{route_id}`.
+
+    Маршруты возвращаются в порядке создания.
+    """
     return RouteListResponse(
         items=[
             RouteListItemResponse.model_validate(route) for route in list_routes(db)
