@@ -19,7 +19,7 @@ def create_app() -> FastAPI:
         openapi_url=openapi_url,
     )
     app.include_router(api_router)
-    
+
     return app
 
 
