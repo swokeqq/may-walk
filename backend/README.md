@@ -33,7 +33,9 @@ OpenAPI схема считается основным контрактом API.
 cp backend/.env.example backend/.env
 ```
 
-Для локальной разработки через HTTP в `backend/.env` можно заменить `AUTH_COOKIE_SECURE=true` на `AUTH_COOKIE_SECURE=false`.
+Для локальной разработки с доступной API документацией следует заменить `DEBUG=false` на `DEBUG=true` в `backend/.env`.
+
+Для локальной разработки с использованием HTTP следует заменить `AUTH_COOKIE_SECURE=true` на `AUTH_COOKIE_SECURE=false` в `backend/.env`.
 
 2. Поднять приложение:
 

@@ -3,10 +3,49 @@
 import pytest
 from fastapi.testclient import TestClient
 
+from may_walk.core.settings import settings
+from may_walk.main import create_app
 
-def test_healthcheck_openapi_documents_response(client: TestClient) -> None:
+
+@pytest.fixture
+def debug_client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    """Создать клиента с включенной OpenAPI-документацией."""
+    monkeypatch.setattr(settings, 'debug', True)
+    return TestClient(create_app(), base_url='https://testserver')
+
+
+@pytest.fixture
+def production_client(monkeypatch: pytest.MonkeyPatch) -> TestClient:
+    """Создать клиента со скрытой OpenAPI-документацией."""
+    monkeypatch.setattr(settings, 'debug', False)
+    return TestClient(create_app(), base_url='https://testserver')
+
+
+@pytest.mark.parametrize('path', ['/docs', '/redoc', '/openapi.json'])
+def test_openapi_documentation_hidden_when_debug_disabled(
+    production_client: TestClient,
+    path: str,
+) -> None:
+    """Проверить, что OpenAPI-документация скрыта при `DEBUG=false`."""
+    response = production_client.get(path)
+
+    assert response.status_code == 404
+
+
+@pytest.mark.parametrize('path', ['/docs', '/redoc', '/openapi.json'])
+def test_openapi_documentation_available_when_debug_enabled(
+    debug_client: TestClient,
+    path: str,
+) -> None:
+    """Проверить, что OpenAPI-документация доступна при `DEBUG=true`."""
+    response = debug_client.get(path)
+
+    assert response.status_code == 200
+
+
+def test_healthcheck_openapi_documents_response(debug_client: TestClient) -> None:
     """Проверить документацию ответа healthcheck."""
-    health_response = _operation(client, '/health', 'get')['responses']['200']
+    health_response = _operation(debug_client, '/health', 'get')['responses']['200']
 
     assert health_response['content']['application/json']['schema'] == {
         '$ref': '#/components/schemas/HealthResponse',
@@ -14,10 +53,10 @@ def test_healthcheck_openapi_documents_response(client: TestClient) -> None:
 
 
 def test_auth_openapi_documents_unauthenticated_responses(
-    client: TestClient,
+    debug_client: TestClient,
 ) -> None:
     """Проверить документацию 401-ответов auth endpoint'ов."""
-    paths = _openapi(client)['paths']
+    paths = _openapi(debug_client)['paths']
     for method, path in (
         ('post', '/api/auth/login'),
         ('get', '/api/auth/status'),
@@ -34,9 +73,11 @@ def test_auth_openapi_documents_unauthenticated_responses(
     assert '401' not in paths['/api/auth/logout']['post']['responses']
 
 
-def test_route_export_openapi_documents_file_response(client: TestClient) -> None:
+def test_route_export_openapi_documents_file_response(
+    debug_client: TestClient,
+) -> None:
     """Проверить OpenAPI-документацию файлового ответа export endpoint'а."""
-    operation = _operation(client, '/api/routes/{route_id}/export', 'get')
+    operation = _operation(debug_client, '/api/routes/{route_id}/export', 'get')
     responses = operation['responses']
     success_response = responses['200']
 
@@ -52,10 +93,10 @@ def test_route_export_openapi_documents_file_response(client: TestClient) -> Non
 
 
 def test_route_import_openapi_documents_multipart_request(
-    client: TestClient,
+    debug_client: TestClient,
 ) -> None:
     """Проверить OpenAPI-документацию multipart import endpoint'а."""
-    openapi = _openapi(client)
+    openapi = _openapi(debug_client)
     operation = openapi['paths']['/api/routes/import']['post']
     multipart_schema = operation['requestBody']['content']['multipart/form-data'][
         'schema'
@@ -84,12 +125,12 @@ def test_route_import_openapi_documents_multipart_request(
     ],
 )
 def test_protected_routes_openapi_document_unauthorized_response(
-    client: TestClient,
+    debug_client: TestClient,
     path: str,
     method: str,
 ) -> None:
     """Проверить описание 401 для защищенных route endpoint'ов."""
-    operation = _operation(client, path, method)
+    operation = _operation(debug_client, path, method)
 
     assert operation['responses']['401'] == {
         'description': 'Необходима cookie-аутентификация mw_session.'
