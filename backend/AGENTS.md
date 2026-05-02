@@ -15,6 +15,7 @@
 - Один DB-зависимый тест локально в PowerShell: `$env:DATABASE_URL='postgresql+psycopg://postgres:postgres@localhost:5432/may_walk'; uv run pytest tests/api/test_authentication.py`
 - Миграции: `uv run alembic upgrade head`
 - Создать первого администратора: `uv run python -m may_walk.cli create-admin`
+- Импортировать подготовленную опорную карту: `uv run python -m may_walk.cli import-reference-segments --file /path/to/reference.geojsonseq --replace`
 - Локальный запуск API: `uv run uvicorn may_walk.main:app --host 0.0.0.0 --port 8000`
 
 ## Структура Кода
@@ -22,16 +23,20 @@
 - Для новых файлов предпочитай полные имена вместо сокращений: `dependencies.py`, `authentication.py`, а не `deps.py` или `auth.py`.
 - API роутеры размещай в `src/may_walk/api/routers/`; для доменных групп можно использовать подпакеты, например `src/may_walk/api/routers/route/`.
 - `src/may_walk/api/router.py` должен только собирать роутеры.
+- CLI живет в пакете `src/may_walk/cli/`; `python -m may_walk.cli` работает через `src/may_walk/cli/__main__.py`.
+- Новые CLI-команды добавляй отдельными файлами в `src/may_walk/cli/commands/`, реализуй контракт `CliCommand` из `src/may_walk/cli/protocol.py` и регистрируй команду в `src/may_walk/cli/registry.py`. Не добавляй ветвление по именам команд в `application.py`.
+- CLI-команды не должны импортировать `may_walk.db.session` на уровне модуля: DB-зависимые импорты делай внутри `run()`, чтобы `--help` работал без `DATABASE_URL`.
 - Route-сервисы размещай в `src/may_walk/services/route/`: CRUD в `crud.py`, импорт в `imports/`, экспорт в `exports/`.
 - Реализации route import/export форматов держи отдельными handler-классами по файлам форматов, а регистрацию форматов — в `imports/__init__.py` и `exports/__init__.py`.
+- Сервисы опорных сегментов размещай в `src/may_walk/services/reference_segments/`: классификация OSM-тегов в `classification/`, разбор подготовленных GeoJSON/GeoJSONSeq файлов в `imports/`, загрузка в БД в `storage/`.
 
 ## Настройки И БД
 
 - Настройки создаются сразу при импорте в `src/may_walk/core/settings.py` как глобальный объект `settings`.
 - У `DATABASE_URL` нет значения по умолчанию. Все сценарии, которые импортируют `may_walk.db.session` или запускают Alembic, требуют заранее заданный `DATABASE_URL`.
-- Локальный Docker-стек живет в `backend/compose.yml` и читает `backend/.env`. Для новой машины начинай с `backend/.env.example`.
-- Из корня репозитория backend-стек поднимается так: `docker compose -f backend/compose.yml up`.
-- В `.env.example` `AUTH_COOKIE_SECURE=true`; для локальной разработки через HTTP в `backend/.env` можно задавать `AUTH_COOKIE_SECURE=false`.
+- Локальный Docker-стек живет в `compose.yml` и читает `.env`. Для новой машины начинай с `.env.example`.
+- Из директории `backend/` backend-стек поднимается так: `docker compose -f compose.yml up`.
+- В `.env.example` `AUTH_COOKIE_SECURE=true`; для локальной разработки через HTTP в `.env` можно задавать `AUTH_COOKIE_SECURE=false`.
 
 ## Alembic И PostGIS
 
@@ -46,6 +51,13 @@
 - `admin_user` хранит только `id`, `password_hash`, `created_at`, `updated_at`. Не добавляй `username`, `email` или `is_active` без отдельного решения.
 - В `admin_user` допускается не больше одной записи; это ограничено индексом `uq_admin_user_singleton`.
 - `auth_session` хранит `id`, `user_id`, `expires_at`, `created_at`, `revoked_at`. Поле `last_seen_at` не добавляй. `expires_at` отвечает за автоматическое истечение сессии, `revoked_at` — за logout.
+
+## Опорные Сегменты
+
+- `reference_segment` не заполняется публичным API; импорт выполняется CLI-командой `import-reference-segments`.
+- CLI принимает подготовленный и распакованный `GeoJSON` или `GeoJSONSeq` в `EPSG:4326`. Сжатые `.gz` файлы перед импортом нужно распаковать вне backend.
+- Неподходящие для расчетной сети OSM-объекты отбрасываются до вставки в БД; поле `is_walkable` не добавляй.
+- Без `--replace` импорт разрешен только в пустую таблицу `reference_segment`; `--replace` заменяет слой в текущей транзакции.
 
 ## Аутентификация
 
