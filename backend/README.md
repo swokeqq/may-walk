@@ -40,25 +40,25 @@ cp .env.example .env
 2. Поднять приложение:
 
 ```bash
-docker compose -f compose.yml up -d --build
+docker compose up -d --build
 ```
 
 3. Применить миграции:
 
 ```bash
-docker compose -f compose.yml exec backend uv run alembic upgrade head
+docker compose exec backend uv run alembic upgrade head
 ```
 
 4. Создать администратора:
 
 ```bash
-docker compose -f compose.yml exec backend uv run python -m may_walk.cli create-admin
+docker compose exec backend uv run python -m may_walk.cli create-admin
 ```
 
-5. Установить подготовленную карту Екатеринбурга и окрестностей:
+5. Установить подготовленную карту Екатеринбурга и его окрестностей:
 
 ```bash
-docker compose -f compose.yml exec backend sh -lc 'mkdir -p /tmp/may_walk && wget -O /tmp/may_walk/yekaterinburg.geojsonseq "https://github.com/swokeqq/may-walk/releases/download/osm-reference-yekaterinburg-02-05-2026/yekaterinburg.geojsonseq" && uv run python -m may_walk.cli import-reference-segments --file /tmp/may_walk/yekaterinburg.geojsonseq --replace'
+docker compose exec backend sh -lc 'mkdir -p /tmp/may_walk && wget -O /tmp/may_walk/yekaterinburg.geojsonseq "https://github.com/swokeqq/may-walk/releases/download/osm-reference-yekaterinburg-02-05-2026/yekaterinburg.geojsonseq" && uv run python -m may_walk.cli import-reference-segments --file /tmp/may_walk/yekaterinburg.geojsonseq --replace'
 ```
 
 ## Импорт Любого Региона
@@ -68,7 +68,7 @@ Backend принимает подготовленный `GeoJSON` или `GeoJSO
 Импортируйте выгрузку региона в контейнер:
 
 ```bash
-docker compose -f compose.yml exec backend uv run python -m may_walk.cli import-reference-segments --file /tmp/may_walk/region.geojsonseq --replace
+docker compose exec backend uv run python -m may_walk.cli import-reference-segments --file /tmp/may_walk/region.geojsonseq --replace
 ```
 
 `--replace` полностью заменяет текущий слой `reference_segment` в одной транзакции. Без `--replace` импорт разрешен только в пустую таблицу.
