@@ -1,9 +1,8 @@
 """Классификация OSM-тегов для импорта опорных сегментов."""
 
 from collections.abc import Mapping
-from typing import Literal
 
-from may_walk.services.reference_segments.osm_tags import (
+from may_walk.services.reference_segments.classification.osm_tags import (
     ASPHALT_SURFACES,
     EXCLUDED_HIGHWAYS,
     FIELD_PATH_SURFACES,
@@ -16,8 +15,7 @@ from may_walk.services.reference_segments.osm_tags import (
     ROAD_HIGHWAYS,
     TRACK_HIGHWAYS,
 )
-
-SurfaceClass = Literal['asphalt', 'forest_path', 'field_path', 'rail', 'other']
+from may_walk.services.reference_segments.surface_classes import SurfaceClass
 
 
 def normalize_osm_tags(tags: Mapping[str, object]) -> dict[str, str]:
