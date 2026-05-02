@@ -25,39 +25,55 @@ OpenAPI схема считается основным контрактом API.
 
 ## Локальный Запуск
 
-Приложение локально запускается через Docker Compose. Команды выполняются из корня репозитория.
+Приложение локально запускается через Docker Compose.
 
 1. Подготовить окружение:
 
 ```bash
-cp backend/.env.example backend/.env
+cp .env.example .env
 ```
 
-Для локальной разработки с доступной API документацией следует заменить `DEBUG=false` на `DEBUG=true` в `backend/.env`.
+Для локальной разработки с доступной API документацией следует заменить `DEBUG=false` на `DEBUG=true` в `.env`.
 
-Для локальной разработки с использованием HTTP следует заменить `AUTH_COOKIE_SECURE=true` на `AUTH_COOKIE_SECURE=false` в `backend/.env`.
+Для локальной разработки с использованием HTTP следует заменить `AUTH_COOKIE_SECURE=true` на `AUTH_COOKIE_SECURE=false` в `.env`.
 
 2. Поднять приложение:
 
 ```bash
-docker compose -f backend/compose.yml up -d --build
+docker compose -f compose.yml up -d --build
 ```
 
 3. Применить миграции:
 
 ```bash
-docker compose -f backend/compose.yml exec backend uv run alembic upgrade head
+docker compose -f compose.yml exec backend uv run alembic upgrade head
 ```
 
 4. Создать администратора:
 
 ```bash
-docker compose -f backend/compose.yml exec backend uv run python -m may_walk.cli create-admin
+docker compose -f compose.yml exec backend uv run python -m may_walk.cli create-admin
 ```
 
-## Проверка
+5. Установить подготовленную карту Екатеринбурга и окрестностей:
 
-Команды проверки выполняются из директории `backend/`.
+```bash
+docker compose -f compose.yml exec backend sh -lc 'mkdir -p /tmp/may_walk && wget -O /tmp/may_walk/yekaterinburg.geojsonseq "https://github.com/swokeqq/may-walk/releases/download/osm-reference-yekaterinburg-02-05-2026/yekaterinburg.geojsonseq" && uv run python -m may_walk.cli import-reference-segments --file /tmp/may_walk/yekaterinburg.geojsonseq --replace'
+```
+
+## Импорт Любого Региона
+
+Backend принимает подготовленный `GeoJSON` или `GeoJSONSeq` с линейными объектами и OSM-тегами в `properties`. Подходящие теги: `highway`, `railway`, `surface`, `tracktype`, `foot` и `access`.
+
+Импортируйте выгрузку региона в контейнер:
+
+```bash
+docker compose -f compose.yml exec backend uv run python -m may_walk.cli import-reference-segments --file /tmp/may_walk/region.geojsonseq --replace
+```
+
+`--replace` полностью заменяет текущий слой `reference_segment` в одной транзакции. Без `--replace` импорт разрешен только в пустую таблицу.
+
+## Проверка
 
 Линт:
 
@@ -74,5 +90,5 @@ uv run ruff format --check .
 Тесты:
 
 ```bash
-DATABASE_URL='postgresql+psycopg://postgres:postgres@localhost:5432/may_walk' uv run pytest
+uv run pytest
 ```
