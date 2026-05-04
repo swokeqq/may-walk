@@ -7,7 +7,8 @@ from fastapi import APIRouter, Cookie, Depends, Response, status
 from fastapi.responses import JSONResponse
 from sqlalchemy.orm import Session
 
-from may_walk.api.dependencies import AUTH_COOKIE_NAME, AUTH_COOKIE_PATH, get_db
+from may_walk.api.dependencies import get_db
+from may_walk.core.authentication import AUTH_COOKIE_NAME, AUTH_COOKIE_PATH
 from may_walk.core.settings import settings
 from may_walk.schemas.authentication import AuthStatusResponse, LoginRequest
 from may_walk.services.authentication import (

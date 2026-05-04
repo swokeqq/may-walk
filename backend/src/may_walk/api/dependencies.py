@@ -8,12 +8,11 @@ from fastapi import Depends, HTTPException, Security, status
 from fastapi.security import APIKeyCookie
 from sqlalchemy.orm import Session
 
+from may_walk.core.authentication import AUTH_COOKIE_NAME
 from may_walk.db.session import SessionLocal
 from may_walk.models.auth_session import AuthSession
 from may_walk.services.authentication import get_valid_auth_session
 
-AUTH_COOKIE_NAME = 'mw_session'
-AUTH_COOKIE_PATH = '/'
 auth_cookie = APIKeyCookie(
     name=AUTH_COOKIE_NAME,
     scheme_name=AUTH_COOKIE_NAME,
