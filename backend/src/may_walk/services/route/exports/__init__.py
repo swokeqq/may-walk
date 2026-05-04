@@ -2,7 +2,7 @@
 
 from may_walk.models.route import Route
 from may_walk.schemas.geometries import GeoJSONGeometry
-from may_walk.schemas.routes import RouteExportFormat
+from may_walk.schemas.route.files import RouteExportFormat
 from may_walk.services.route.exports.geojson import GeoJSONExportHandler
 from may_walk.services.route.exports.gpx import GPXExportHandler
 from may_walk.services.route.exports.kml import KMLExportHandler

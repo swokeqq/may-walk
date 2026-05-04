@@ -4,7 +4,7 @@ import json
 
 from may_walk.models.route import Route
 from may_walk.schemas.geometries import GeoJSONGeometry
-from may_walk.schemas.routes import RouteExportFormat
+from may_walk.schemas.route.files import RouteExportFormat
 
 
 class GeoJSONExportHandler:

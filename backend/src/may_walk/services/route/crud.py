@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 
 from may_walk.models.route import Route
 from may_walk.schemas.geometries import GeoJSONGeometry
-from may_walk.schemas.routes import RouteCreateRequest, RouteUpdateRequest
+from may_walk.schemas.route.crud import RouteCreateRequest, RouteUpdateRequest
 from may_walk.services.geometries import geojson_to_postgis, postgis_geojson_to_schema
 
 
