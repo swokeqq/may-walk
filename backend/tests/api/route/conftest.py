@@ -4,7 +4,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import delete
 
-from may_walk.core.passwords import hash_password
+from may_walk.core.authentication import hash_password
 from may_walk.db.session import SessionLocal
 from may_walk.models.admin_user import AdminUser
 from may_walk.models.auth_session import AuthSession

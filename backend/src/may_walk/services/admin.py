@@ -3,7 +3,7 @@
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from may_walk.core.passwords import hash_password
+from may_walk.core.authentication import hash_password
 from may_walk.models.admin_user import AdminUser
 
 
