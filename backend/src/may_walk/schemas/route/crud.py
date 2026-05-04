@@ -1,7 +1,6 @@
-"""Схемы ендпоинтов маршрутов."""
+"""Схемы CRUD endpoint'ов маршрутов."""
 
 from datetime import datetime
-from enum import StrEnum
 from uuid import UUID
 
 from pydantic import BaseModel, ConfigDict, Field
@@ -69,11 +68,3 @@ class RouteResponse(RouteListItemResponse):
     geometry: GeoJSONMultiLineStringGeometry | None = Field(
         description='Нормализованная геометрия маршрута в EPSG:4326.',
     )
-
-
-class RouteExportFormat(StrEnum):
-    """Поддерживаемые форматы экспорта маршрута."""
-
-    geojson = 'geojson'
-    gpx = 'gpx'
-    kml = 'kml'

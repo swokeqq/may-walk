@@ -2,7 +2,7 @@
 
 from may_walk.models.route import Route
 from may_walk.schemas.geometries import GeoJSONGeometry, GeoJSONMultiLineStringGeometry
-from may_walk.schemas.routes import RouteResponse
+from may_walk.schemas.route.crud import RouteResponse
 
 
 def route_response(route: Route, geometry: GeoJSONGeometry | None) -> RouteResponse:

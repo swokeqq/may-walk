@@ -13,7 +13,7 @@ from may_walk.api.responses import (
     protected_responses,
 )
 from may_walk.api.routers.route.responses import route_response
-from may_walk.schemas.routes import (
+from may_walk.schemas.route.crud import (
     RouteCreateRequest,
     RouteListItemResponse,
     RouteListResponse,

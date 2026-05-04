@@ -9,13 +9,13 @@ from sqlalchemy.orm import Session
 from may_walk.api.dependencies import get_db, require_auth
 from may_walk.api.responses import ROUTE_NOT_FOUND_RESPONSE, protected_responses
 from may_walk.models.route import Route
-from may_walk.schemas.routes import RouteExportFormat
+from may_walk.schemas.route.files import RouteExportFormat
 from may_walk.services.route.crud import get_route_with_geometry
 from may_walk.services.route.exports import export_route_file
 
 router = APIRouter(
     prefix='/api/routes',
-    tags=['route-files'],
+    tags=['routes-files'],
     dependencies=[Depends(require_auth)],
 )
 
