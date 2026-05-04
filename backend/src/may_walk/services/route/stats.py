@@ -72,17 +72,14 @@ def _classified_segment_lengths_query(route_id: UUID):
         )
         .cte('classified_segments')
     )
-    return (
-        select(
-            classified_segments.c.surface_class,
-            func.sum(
-                func.ST_Length(
-                    cast(classified_segments.c.geometry, Geography(srid=4326)),
-                )
-            ).label('length_m'),
-        )
-        .group_by(classified_segments.c.surface_class)
-    )
+    return select(
+        classified_segments.c.surface_class,
+        func.sum(
+            func.ST_Length(
+                cast(classified_segments.c.geometry, Geography(srid=4326)),
+            )
+        ).label('length_m'),
+    ).group_by(classified_segments.c.surface_class)
 
 
 def _route_segments(route_id: UUID):

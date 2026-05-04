@@ -50,7 +50,7 @@ def test_route_stats_groups_lengths_by_surface_class(
             'name': 'Stats route',
             'geometry': {
                 'type': 'LineString',
-                'coordinates': [[0, 0], [0.002, 0]],
+                'coordinates': [[0, 0], [0.001, 0], [0.002, 0]],
             },
         },
     )
@@ -77,6 +77,102 @@ def test_route_stats_groups_lengths_by_surface_class(
     assert payload['total_m'] == pytest.approx(
         payload['asphalt_m'] + payload['forest_path_m'], abs=0.01
     )
+
+
+def test_route_stats_matches_nearby_reference_segments(
+    authenticated_client: TestClient,
+) -> None:
+    """Проверить расчет для GPS-трека рядом с опорной сетью."""
+    _insert_reference_segments()
+    create_response = authenticated_client.post(
+        '/api/routes',
+        json={
+            'name': 'Nearby stats route',
+            'geometry': {
+                'type': 'LineString',
+                'coordinates': [[0, 0.00005], [0.0009, 0.00005]],
+            },
+        },
+    )
+    route_id = create_response.json()['id']
+
+    response = authenticated_client.get(f'/api/routes/{route_id}/stats')
+
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload['asphalt_m'] == pytest.approx(100.19, abs=1)
+    assert payload['forest_path_m'] == 0
+    assert payload['field_path_m'] == 0
+    assert payload['rail_m'] == 0
+    assert payload['other_m'] == 0
+    assert payload['total_m'] == pytest.approx(payload['asphalt_m'], abs=0.01)
+
+
+def test_route_stats_mixes_exact_nearby_and_unmatched_segments(
+    authenticated_client: TestClient,
+) -> None:
+    """Проверить смешанный маршрут с точными, примерными и прочими участками."""
+    _insert_reference_segments()
+    create_response = authenticated_client.post(
+        '/api/routes',
+        json={
+            'name': 'Mixed stats route',
+            'geometry': {
+                'type': 'MultiLineString',
+                'coordinates': [
+                    [[0, 0], [0.001, 0]],
+                    [[0.001, 0.00005], [0.0019, 0.00005]],
+                    [[0.02, 0.02], [0.021, 0.02]],
+                ],
+            },
+        },
+    )
+    route_id = create_response.json()['id']
+
+    response = authenticated_client.get(f'/api/routes/{route_id}/stats')
+
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload['asphalt_m'] == pytest.approx(111.32, abs=1)
+    assert payload['forest_path_m'] == pytest.approx(100.19, abs=1)
+    assert payload['field_path_m'] == 0
+    assert payload['rail_m'] == 0
+    assert payload['other_m'] == pytest.approx(111.32, abs=1)
+    assert payload['total_m'] == pytest.approx(
+        payload['asphalt_m'] + payload['forest_path_m'] + payload['other_m'],
+        abs=0.01,
+    )
+
+
+def test_route_stats_counts_unmatched_segments_as_other(
+    authenticated_client: TestClient,
+) -> None:
+    """Проверить учет маршрута вне опорной сети как `other`."""
+    create_response = authenticated_client.post(
+        '/api/routes',
+        json={
+            'name': 'Unmatched stats route',
+            'geometry': {
+                'type': 'LineString',
+                'coordinates': [[0.02, 0.02], [0.021, 0.02]],
+            },
+        },
+    )
+    route_id = create_response.json()['id']
+
+    response = authenticated_client.get(f'/api/routes/{route_id}/stats')
+
+    payload = response.json()
+
+    assert response.status_code == 200
+    assert payload['asphalt_m'] == 0
+    assert payload['forest_path_m'] == 0
+    assert payload['field_path_m'] == 0
+    assert payload['rail_m'] == 0
+    assert payload['other_m'] == pytest.approx(111.32, abs=1)
+    assert payload['total_m'] == pytest.approx(payload['other_m'], abs=0.01)
 
 
 def _insert_reference_segments() -> None:
