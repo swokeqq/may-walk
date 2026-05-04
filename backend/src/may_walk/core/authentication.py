@@ -1,7 +1,10 @@
-"""Хеширование и проверка паролей."""
+"""Базовая инфраструктура аутентификации."""
 
 from argon2 import PasswordHasher
 from argon2.exceptions import VerifyMismatchError
+
+AUTH_COOKIE_NAME = 'mw_session'
+AUTH_COOKIE_PATH = '/'
 
 _password_hasher = PasswordHasher()
 

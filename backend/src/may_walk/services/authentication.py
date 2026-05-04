@@ -6,7 +6,7 @@ from uuid import UUID
 from sqlalchemy import select
 from sqlalchemy.orm import Session
 
-from may_walk.core.passwords import verify_password
+from may_walk.core.authentication import verify_password
 from may_walk.models.admin_user import AdminUser
 from may_walk.models.auth_session import AuthSession
 

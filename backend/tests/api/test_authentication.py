@@ -7,8 +7,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import delete, func, select
 
-from may_walk.api.dependencies import AUTH_COOKIE_NAME
-from may_walk.core.passwords import hash_password
+from may_walk.core.authentication import AUTH_COOKIE_NAME, hash_password
 from may_walk.db.session import SessionLocal
 from may_walk.models.admin_user import AdminUser
 from may_walk.models.auth_session import AuthSession
