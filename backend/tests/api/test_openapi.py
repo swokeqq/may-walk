@@ -122,6 +122,7 @@ def test_route_import_openapi_documents_multipart_request(
         ('/api/routes/{route_id}', 'delete'),
         ('/api/routes/import', 'post'),
         ('/api/routes/{route_id}/export', 'get'),
+        ('/api/routes/{route_id}/stats', 'get'),
     ],
 )
 def test_protected_routes_openapi_document_unauthorized_response(
