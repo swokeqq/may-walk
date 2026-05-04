@@ -1,5 +1,6 @@
 """Расчет статистики маршрутов по опорной сети."""
 
+from dataclasses import dataclass
 from uuid import UUID
 
 from geoalchemy2 import Geography
@@ -11,9 +12,23 @@ from may_walk.models.route import Route
 from may_walk.services.reference_segments.surface_classes import SURFACE_CLASS_VALUES
 
 
-def calculate_route_stats(session: Session, route_id: UUID) -> dict[str, float]:
+@dataclass(frozen=True)
+class RouteStats:
+    """Длины маршрута по классам покрытия в метрах."""
+
+    asphalt_m: float
+    forest_path_m: float
+    field_path_m: float
+    rail_m: float
+    other_m: float
+    total_m: float
+
+
+def calculate_route_stats(session: Session, route_id: UUID) -> RouteStats:
     """Посчитать длину пересечений маршрута с опорными сегментами по покрытиям."""
-    stats = {f'{surface_class}_m': 0.0 for surface_class in SURFACE_CLASS_VALUES}
+    lengths_by_field = {
+        f'{surface_class}_m': 0.0 for surface_class in SURFACE_CLASS_VALUES
+    }
     intersection_geometry = func.ST_CollectionExtract(
         func.ST_Intersection(Route.geometry, ReferenceSegment.geometry),
         2,
@@ -45,7 +60,13 @@ def calculate_route_stats(session: Session, route_id: UUID) -> dict[str, float]:
     )
 
     for surface_class, length_m in session.execute(route_stats_query):
-        stats[f'{surface_class}_m'] = float(length_m or 0.0)
+        lengths_by_field[f'{surface_class}_m'] = float(length_m or 0.0)
 
-    stats['total_m'] = sum(stats.values())
-    return stats
+    return RouteStats(
+        asphalt_m=lengths_by_field['asphalt_m'],
+        forest_path_m=lengths_by_field['forest_path_m'],
+        field_path_m=lengths_by_field['field_path_m'],
+        rail_m=lengths_by_field['rail_m'],
+        other_m=lengths_by_field['other_m'],
+        total_m=sum(lengths_by_field.values()),
+    )
