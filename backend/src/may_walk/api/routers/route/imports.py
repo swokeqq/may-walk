@@ -16,7 +16,7 @@ from may_walk.services.route.imports import RouteImportError, parse_route_file
 
 router = APIRouter(
     prefix='/api/routes',
-    tags=['route-files'],
+    tags=['routes-files'],
     dependencies=[Depends(require_auth)],
 )
 
