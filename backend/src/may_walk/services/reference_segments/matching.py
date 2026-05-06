@@ -33,26 +33,30 @@ def exact_reference_match(source_segments):
     )
 
 
-def nearest_reference_match(source_segments):
+def nearest_reference_match(source_segments, exact_reference=None):
     """Сформировать lateral-запрос ближайшего опорного сегмента."""
+    conditions = [
+        ReferenceSegment.geometry.op('&&')(
+            func.ST_Expand(
+                source_segments.c.geometry,
+                REFERENCE_MATCH_TOLERANCE_DEGREES,
+            )
+        ),
+        func.ST_DWithin(
+            cast(source_segments.c.geometry, Geography(srid=4326)),
+            cast(ReferenceSegment.geometry, Geography(srid=4326)),
+            REFERENCE_MATCH_TOLERANCE_M,
+        ),
+    ]
+    if exact_reference is not None:
+        conditions.append(exact_reference.c.surface_class.is_(None))
+
     return (
         select(
             ReferenceSegment.surface_class.label('surface_class'),
             ReferenceSegment.geometry.label('reference_geometry'),
         )
-        .where(
-            ReferenceSegment.geometry.op('&&')(
-                func.ST_Expand(
-                    source_segments.c.geometry,
-                    REFERENCE_MATCH_TOLERANCE_DEGREES,
-                )
-            ),
-            func.ST_DWithin(
-                cast(source_segments.c.geometry, Geography(srid=4326)),
-                cast(ReferenceSegment.geometry, Geography(srid=4326)),
-                REFERENCE_MATCH_TOLERANCE_M,
-            ),
-        )
+        .where(*conditions)
         .order_by(source_segments.c.geometry.op('<->')(ReferenceSegment.geometry))
         .limit(1)
         .lateral('nearest_reference')

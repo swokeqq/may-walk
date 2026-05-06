@@ -53,7 +53,7 @@ def _classified_segment_lengths_query(route_id: UUID):
     """Сформировать запрос классификации сегментов маршрута по опорной сети."""
     route_segments = _route_segments(route_id)
     exact_reference = exact_reference_match(route_segments)
-    nearest_reference = nearest_reference_match(route_segments)
+    nearest_reference = nearest_reference_match(route_segments, exact_reference)
     surface_class = func.coalesce(
         exact_reference.c.surface_class,
         nearest_reference.c.surface_class,
