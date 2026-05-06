@@ -7,12 +7,12 @@ from geoalchemy2 import Geography
 from sqlalchemy import cast, func, select, true
 from sqlalchemy.orm import Session
 
-from may_walk.models.reference_segment import ReferenceSegment
 from may_walk.models.route import Route
+from may_walk.services.reference_segments.matching import (
+    exact_reference_match,
+    nearest_reference_match,
+)
 from may_walk.services.reference_segments.surface_classes import SURFACE_CLASS_VALUES
-
-REFERENCE_MATCH_TOLERANCE_M = 10.0
-REFERENCE_MATCH_TOLERANCE_DEGREES = 0.001
 
 
 @dataclass(frozen=True)
@@ -52,8 +52,8 @@ def calculate_route_stats(session: Session, route_id: UUID) -> RouteStats:
 def _classified_segment_lengths_query(route_id: UUID):
     """Сформировать запрос классификации сегментов маршрута по опорной сети."""
     route_segments = _route_segments(route_id)
-    exact_reference = _exact_reference(route_segments)
-    nearest_reference = _nearest_reference(route_segments)
+    exact_reference = exact_reference_match(route_segments)
+    nearest_reference = nearest_reference_match(route_segments)
     surface_class = func.coalesce(
         exact_reference.c.surface_class,
         nearest_reference.c.surface_class,
@@ -107,48 +107,4 @@ def _route_total_length_query(route_id: UUID):
                 cast(route_segments.c.geometry, Geography(srid=4326)),
             )
         )
-    )
-
-
-def _exact_reference(route_segments):
-    """Сформировать lateral-запрос точного линейного совпадения."""
-    intersection_geometry = func.ST_CollectionExtract(
-        func.ST_Intersection(route_segments.c.geometry, ReferenceSegment.geometry),
-        2,
-    )
-    return (
-        select(ReferenceSegment.surface_class.label('surface_class'))
-        .where(
-            route_segments.c.geometry.op('&&')(ReferenceSegment.geometry),
-            func.ST_Intersects(route_segments.c.geometry, ReferenceSegment.geometry),
-            ~func.ST_IsEmpty(intersection_geometry),
-        )
-        .order_by(
-            func.ST_Length(cast(intersection_geometry, Geography(srid=4326))).desc()
-        )
-        .limit(1)
-        .lateral('exact_reference')
-    )
-
-
-def _nearest_reference(route_segments):
-    """Сформировать lateral-запрос ближайшего опорного сегмента."""
-    return (
-        select(ReferenceSegment.surface_class.label('surface_class'))
-        .where(
-            ReferenceSegment.geometry.op('&&')(
-                func.ST_Expand(
-                    route_segments.c.geometry,
-                    REFERENCE_MATCH_TOLERANCE_DEGREES,
-                )
-            ),
-            func.ST_DWithin(
-                cast(route_segments.c.geometry, Geography(srid=4326)),
-                cast(ReferenceSegment.geometry, Geography(srid=4326)),
-                REFERENCE_MATCH_TOLERANCE_M,
-            ),
-        )
-        .order_by(route_segments.c.geometry.op('<->')(ReferenceSegment.geometry))
-        .limit(1)
-        .lateral('nearest_reference')
     )
