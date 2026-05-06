@@ -1,4 +1,4 @@
-"""Примагничивание маршрутов к опорной сети."""
+"""Примагничивание линейных геометрий к опорной сети."""
 
 import json
 
@@ -17,8 +17,8 @@ from may_walk.services.reference_segments.matching import (
 )
 
 
-def snap_route_geometry(session: Session, geometry: GeoJSONGeometry) -> GeoJSONGeometry:
-    """Вернуть геометрию, где найденные участки заменены опорными сегментами."""
+def snap_geometry(session: Session, geometry: GeoJSONGeometry) -> GeoJSONGeometry:
+    """Вернуть переданную геометрию с заменой найденных участков дорогами."""
     snapped_geometry_json = session.scalar(_snapped_geometry_query(geometry))
     snapped_geometry = postgis_geojson_to_schema(snapped_geometry_json)
     if snapped_geometry is None:
