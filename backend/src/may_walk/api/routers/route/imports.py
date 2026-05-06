@@ -13,6 +13,7 @@ from may_walk.schemas.route.crud import RouteCreateRequest, RouteResponse
 from may_walk.services.geometries import GeometryValidationError
 from may_walk.services.route.crud import create_route, get_route_with_geometry
 from may_walk.services.route.imports import RouteImportError, parse_route_file
+from may_walk.services.route.snap import snap_geometry
 
 router = APIRouter(
     prefix='/api/routes',
@@ -28,12 +29,10 @@ router = APIRouter(
     responses=protected_responses(
         {
             status.HTTP_400_BAD_REQUEST: {
-                'description': 'Неподдержанный текущий сценарий: snap=true.',
+                'description': 'Некорректный import payload.',
                 'content': {
                     'application/json': {
-                        'example': {
-                            'detail': 'Route import with snap is not supported yet'
-                        }
+                        'example': {'detail': 'Unsupported route file format'}
                     }
                 },
             },
@@ -68,8 +67,8 @@ async def routes_import(
         bool,
         Form(
             description=(
-                'Флаг импорта с привязкой к дорожному графу. Текущее поведение: '
-                '`snap=true` возвращает `400`, snap import еще не поддержан.'
+                'Если `true`, импортированная геометрия примагничивается к '
+                'опорной сети перед сохранением. По умолчанию `false`.'
             ),
             examples=[False],
         ),
@@ -84,19 +83,16 @@ async def routes_import(
     файла без расширения. Импортированная геометрия нормализуется в
     `MultiLineString`.
 
-    Параметр `snap` зарезервирован для будущей привязки к дорожному графу.
-    Сейчас `snap=true` всегда возвращает `400`.
+    Если `snap=true`, вся импортированная геометрия перед сохранением
+    примагничивается к опорной сети. Участки без найденной дороги сохраняются
+    как есть.
     """
-    if snap:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail='Route import with snap is not supported yet',
-        )
-
     filename = file.filename or ''
     content = await file.read()
     try:
         geometry = parse_route_file(filename, content)
+        if snap:
+            geometry = snap_geometry(db, geometry)
         route = create_route(
             db,
             RouteCreateRequest(
