@@ -61,13 +61,16 @@ def _snapped_geometry_query(geometry: GeoJSONGeometry):
         .cte('snapped_segments')
     )
     collected_geometry = func.ST_Multi(
-        func.ST_Collect(
-            func.array_agg(
-                aggregate_order_by(
-                    snapped_segments.c.geometry,
-                    snapped_segments.c.path,
+        func.ST_CollectionExtract(
+            func.ST_Collect(
+                func.array_agg(
+                    aggregate_order_by(
+                        snapped_segments.c.geometry,
+                        snapped_segments.c.path,
+                    )
                 )
-            )
+            ),
+            2,
         )
     )
     return select(func.ST_AsGeoJSON(collected_geometry))
@@ -97,6 +100,7 @@ def _snapped_segment_geometry(source_geometry, reference_geometry):
     )
     return case(
         (reference_geometry.is_(None), source_geometry),
+        (start_fraction == end_fraction, source_geometry),
         (start_fraction <= end_fraction, forward_geometry),
         else_=reversed_geometry,
     )

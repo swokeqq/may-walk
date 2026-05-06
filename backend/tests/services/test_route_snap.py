@@ -88,6 +88,34 @@ def test_snap_geometry_preserves_reverse_direction() -> None:
     assert coordinates[0][1] == pytest.approx((0.003, 0.0))
 
 
+def test_snap_geometry_keeps_line_when_reference_projection_collapses() -> None:
+    """Проверить fallback, если проекция на дорогу вырождается в точку."""
+    _insert_reference_segment([[0, 0], [0.01, 0]])
+
+    with SessionLocal() as session:
+        result = snap_geometry(
+            session,
+            GeoJSONGeometry.model_validate(
+                {
+                    'type': 'MultiLineString',
+                    'coordinates': [
+                        [[0.003, 0.00005], [0.004, 0.00005]],
+                        [[0.005, -0.00005], [0.005, 0.00005]],
+                    ],
+                }
+            ),
+        )
+
+    coordinates = result.model_dump()['coordinates']
+
+    assert result.type == 'MultiLineString'
+    assert len(coordinates) == 2
+    assert coordinates[0][0] == pytest.approx((0.003, 0.0))
+    assert coordinates[0][1] == pytest.approx((0.004, 0.0))
+    assert coordinates[1][0] == pytest.approx((0.005, -0.00005))
+    assert coordinates[1][1] == pytest.approx((0.005, 0.00005))
+
+
 def test_snap_geometry_keeps_line_without_reference_match() -> None:
     """Проверить fallback на исходную линию без найденной дороги."""
     source_geometry = GeoJSONGeometry.model_validate(
