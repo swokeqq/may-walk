@@ -20,5 +20,8 @@ class RouteSnapResponse(BaseModel):
     """Ответ с примагниченной геометрией."""
 
     snapped_geometry: GeoJSONMultiLineStringGeometry = Field(
-        description='Переданная геометрия после замены найденных участков дорогами.',
+        description=(
+            'Переданная геометрия после замены найденных участков '
+            'соответствующими дорогами.'
+        ),
     )
