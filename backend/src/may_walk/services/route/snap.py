@@ -2,7 +2,7 @@
 
 import json
 
-from sqlalchemy import func, select, true
+from sqlalchemy import case, func, select, true
 from sqlalchemy.dialects.postgresql import aggregate_order_by
 from sqlalchemy.orm import Session
 
@@ -32,14 +32,14 @@ def _snapped_geometry_query(geometry: GeoJSONGeometry):
     source_segments = _source_segments(geometry)
     exact_reference = exact_reference_match(source_segments)
     nearest_reference = nearest_reference_match(source_segments, exact_reference)
-    snapped_segments = (
+    matched_segments = (
         select(
             source_segments.c.path,
+            source_segments.c.geometry.label('source_geometry'),
             func.coalesce(
                 exact_reference.c.reference_geometry,
                 nearest_reference.c.reference_geometry,
-                source_segments.c.geometry,
-            ).label('geometry'),
+            ).label('reference_geometry'),
         )
         .select_from(
             source_segments.outerjoin(exact_reference, true()).outerjoin(
@@ -47,6 +47,17 @@ def _snapped_geometry_query(geometry: GeoJSONGeometry):
                 true(),
             )
         )
+        .cte('matched_segments')
+    )
+    snapped_segments = (
+        select(
+            matched_segments.c.path,
+            _snapped_segment_geometry(
+                matched_segments.c.source_geometry,
+                matched_segments.c.reference_geometry,
+            ).label('geometry'),
+        )
+        .select_from(matched_segments)
         .cte('snapped_segments')
     )
     collected_geometry = func.ST_Multi(
@@ -60,6 +71,35 @@ def _snapped_geometry_query(geometry: GeoJSONGeometry):
         )
     )
     return select(func.ST_AsGeoJSON(collected_geometry))
+
+
+def _snapped_segment_geometry(source_geometry, reference_geometry):
+    """Вернуть подотрезок опорного сегмента для входного участка."""
+    start_fraction = func.ST_LineLocatePoint(
+        reference_geometry,
+        func.ST_StartPoint(source_geometry),
+    )
+    end_fraction = func.ST_LineLocatePoint(
+        reference_geometry,
+        func.ST_EndPoint(source_geometry),
+    )
+    forward_geometry = func.ST_LineSubstring(
+        reference_geometry,
+        start_fraction,
+        end_fraction,
+    )
+    reversed_geometry = func.ST_Reverse(
+        func.ST_LineSubstring(
+            reference_geometry,
+            end_fraction,
+            start_fraction,
+        )
+    )
+    return case(
+        (reference_geometry.is_(None), source_geometry),
+        (start_fraction <= end_fraction, forward_geometry),
+        else_=reversed_geometry,
+    )
 
 
 def _source_segments(geometry: GeoJSONGeometry):
