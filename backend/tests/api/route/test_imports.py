@@ -3,6 +3,10 @@
 import json
 
 from fastapi.testclient import TestClient
+from sqlalchemy import func
+
+from may_walk.db.session import SessionLocal
+from may_walk.models.reference_segment import ReferenceSegment
 
 
 def test_route_import_requires_auth(client: TestClient) -> None:
@@ -82,16 +86,43 @@ def test_route_import_kml(authenticated_client: TestClient) -> None:
     ]
 
 
-def test_route_import_with_snap_returns_error(
+def test_route_import_with_snap_saves_snapped_geometry(
     authenticated_client: TestClient,
-    line_string_geometry: dict[str, object],
 ) -> None:
-    """Проверить явный отказ от импорта со snap на текущем этапе."""
+    """Проверить импорт с примагничиванием перед сохранением."""
+    _insert_reference_segment([[0, 0], [0.001, 0]])
+    geometry = {
+        'type': 'LineString',
+        'coordinates': [[0, 0.00005], [0.001, 0.00005]],
+    }
+
     response = authenticated_client.post(
         '/api/routes/import',
         data={'snap': 'true'},
-        files={'file': ('route.geojson', json.dumps(line_string_geometry))},
+        files={'file': ('route.geojson', json.dumps(geometry))},
     )
 
-    assert response.status_code == 400
-    assert response.json()['detail'] == 'Route import with snap is not supported yet'
+    assert response.status_code == 201
+    assert response.json()['geometry']['coordinates'] == [[[0, 0], [0.001, 0]]]
+
+
+def _insert_reference_segment(coordinates: list[list[float]]) -> None:
+    """Добавить тестовый опорный сегмент."""
+    with SessionLocal() as session:
+        session.add(
+            ReferenceSegment(
+                geometry=_line_string(coordinates),
+                surface_class='asphalt',
+            )
+        )
+        session.commit()
+
+
+def _line_string(coordinates: list[list[float]]) -> object:
+    """Сформировать PostGIS LineString из координат GeoJSON."""
+    return func.ST_SetSRID(
+        func.ST_GeomFromGeoJSON(
+            json.dumps({'type': 'LineString', 'coordinates': coordinates}),
+        ),
+        4326,
+    )
