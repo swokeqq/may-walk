@@ -2,6 +2,7 @@
 
 import json
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import func
 
@@ -37,6 +38,31 @@ def test_route_snap_returns_nearby_reference_line(
         'type': 'MultiLineString',
         'coordinates': [[[0, 0], [0.001, 0]]],
     }
+
+
+def test_route_snap_returns_reference_substring(
+    authenticated_client: TestClient,
+) -> None:
+    """Проверить возврат подотрезка дороги, а не всего опорного сегмента."""
+    _insert_reference_segment([[0, 0], [0.01, 0]])
+
+    response = authenticated_client.post(
+        '/api/routes/snap',
+        json={
+            'geometry': {
+                'type': 'LineString',
+                'coordinates': [[0.003, 0.00005], [0.004, 0.00005]],
+            }
+        },
+    )
+
+    coordinates = response.json()['snapped_geometry']['coordinates']
+
+    assert response.status_code == 200
+    assert len(coordinates) == 1
+    assert len(coordinates[0]) == 2
+    assert coordinates[0][0] == pytest.approx([0.003, 0])
+    assert coordinates[0][1] == pytest.approx([0.004, 0])
 
 
 def test_route_snap_keeps_line_without_reference_match(

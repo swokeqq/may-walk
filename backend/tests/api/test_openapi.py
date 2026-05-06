@@ -107,9 +107,29 @@ def test_route_import_openapi_documents_multipart_request(
     assert set(body_schema['properties']) >= {'file', 'name', 'snap'}
     assert 'file' in body_schema['required']
     assert responses['400']['content']['application/json']['example'] == {
-        'detail': 'Route import with snap is not supported yet'
+        'detail': 'Unsupported route file format'
     }
     assert '422' in responses
+
+
+def test_route_snap_openapi_documents_geometry_request(
+    debug_client: TestClient,
+) -> None:
+    """Проверить OpenAPI-документацию snap endpoint'а."""
+    openapi = _openapi(debug_client)
+    operation = openapi['paths']['/api/routes/snap']['post']
+    request_schema = operation['requestBody']['content']['application/json']['schema']
+    body_schema = _resolve_ref(openapi, request_schema)
+
+    assert 'geometry' in body_schema['required']
+    assert (
+        'snapped_geometry'
+        in _resolve_ref(
+            openapi,
+            operation['responses']['200']['content']['application/json']['schema'],
+        )['properties']
+    )
+    assert '422' in operation['responses']
 
 
 @pytest.mark.parametrize(
@@ -121,6 +141,7 @@ def test_route_import_openapi_documents_multipart_request(
         ('/api/routes/{route_id}', 'patch'),
         ('/api/routes/{route_id}', 'delete'),
         ('/api/routes/import', 'post'),
+        ('/api/routes/snap', 'post'),
         ('/api/routes/{route_id}/export', 'get'),
         ('/api/routes/{route_id}/stats', 'get'),
     ],

@@ -40,6 +40,54 @@ def test_snap_geometry_returns_nearby_reference_line() -> None:
     }
 
 
+def test_snap_geometry_returns_reference_substring() -> None:
+    """Проверить замену линии подотрезком длинного опорного сегмента."""
+    _insert_reference_segment([[0, 0], [0.01, 0]])
+
+    with SessionLocal() as session:
+        result = snap_geometry(
+            session,
+            GeoJSONGeometry.model_validate(
+                {
+                    'type': 'LineString',
+                    'coordinates': [[0.003, 0.00005], [0.004, 0.00005]],
+                }
+            ),
+        )
+
+    coordinates = result.model_dump()['coordinates']
+
+    assert result.type == 'MultiLineString'
+    assert len(coordinates) == 1
+    assert len(coordinates[0]) == 2
+    assert coordinates[0][0] == pytest.approx((0.003, 0.0))
+    assert coordinates[0][1] == pytest.approx((0.004, 0.0))
+
+
+def test_snap_geometry_preserves_reverse_direction() -> None:
+    """Проверить сохранение обратного направления входной линии."""
+    _insert_reference_segment([[0, 0], [0.01, 0]])
+
+    with SessionLocal() as session:
+        result = snap_geometry(
+            session,
+            GeoJSONGeometry.model_validate(
+                {
+                    'type': 'LineString',
+                    'coordinates': [[0.004, 0.00005], [0.003, 0.00005]],
+                }
+            ),
+        )
+
+    coordinates = result.model_dump()['coordinates']
+
+    assert result.type == 'MultiLineString'
+    assert len(coordinates) == 1
+    assert len(coordinates[0]) == 2
+    assert coordinates[0][0] == pytest.approx((0.004, 0.0))
+    assert coordinates[0][1] == pytest.approx((0.003, 0.0))
+
+
 def test_snap_geometry_keeps_line_without_reference_match() -> None:
     """Проверить fallback на исходную линию без найденной дороги."""
     source_geometry = GeoJSONGeometry.model_validate(

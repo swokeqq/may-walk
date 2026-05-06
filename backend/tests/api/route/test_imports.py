@@ -2,6 +2,7 @@
 
 import json
 
+import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy import func
 
@@ -90,10 +91,10 @@ def test_route_import_with_snap_saves_snapped_geometry(
     authenticated_client: TestClient,
 ) -> None:
     """Проверить импорт с примагничиванием перед сохранением."""
-    _insert_reference_segment([[0, 0], [0.001, 0]])
+    _insert_reference_segment([[0, 0], [0.01, 0]])
     geometry = {
         'type': 'LineString',
-        'coordinates': [[0, 0.00005], [0.001, 0.00005]],
+        'coordinates': [[0.003, 0.00005], [0.004, 0.00005]],
     }
 
     response = authenticated_client.post(
@@ -103,7 +104,11 @@ def test_route_import_with_snap_saves_snapped_geometry(
     )
 
     assert response.status_code == 201
-    assert response.json()['geometry']['coordinates'] == [[[0, 0], [0.001, 0]]]
+    coordinates = response.json()['geometry']['coordinates']
+    assert len(coordinates) == 1
+    assert len(coordinates[0]) == 2
+    assert coordinates[0][0] == pytest.approx([0.003, 0])
+    assert coordinates[0][1] == pytest.approx([0.004, 0])
 
 
 def _insert_reference_segment(coordinates: list[list[float]]) -> None:
