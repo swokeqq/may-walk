@@ -68,6 +68,7 @@ jobs:
     env:
       DATABASE_URL: postgresql+psycopg://postgres:postgres@localhost:5432/may_walk
       DEBUG: false
+      OSRM_URL: http://osrm:5000
 
     steps:
       - name: Check out repository
