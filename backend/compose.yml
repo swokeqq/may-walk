@@ -17,6 +17,86 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/data
 
+  pbf-init:
+    image: curlimages/curl:8.16.0
+    user: '0:0'
+    env_file:
+      - .env
+    volumes:
+      - osrm_data:/data
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        set -e
+        if [ ! -f /data/source.url ] || [ "$$(cat /data/source.url)" != "$$OSRM_PBF_URL" ]; then
+          rm -f /data/map.osm.pbf /data/map.osm.pbf.tmp /data/map.osrm* /data/reference.geojsonseq
+          curl -fL "$$OSRM_PBF_URL" -o /data/map.osm.pbf.tmp
+          mv /data/map.osm.pbf.tmp /data/map.osm.pbf
+          printf '%s' "$$OSRM_PBF_URL" > /data/source.url
+        fi
+    restart: 'no'
+
+  osrm-init:
+    image: osrm/osrm-backend:v5.25.0
+    volumes:
+      - osrm_data:/data
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        set -e
+        if [ ! -f /data/map.osrm ] || [ ! -f /data/map.osrm.partition ] || [ ! -f /data/map.osrm.cells ] || [ ! -f /data/map.osrm.cell_metrics ]; then
+          osrm-extract -p /opt/foot.lua /data/map.osm.pbf
+          osrm-partition /data/map.osrm
+          osrm-customize /data/map.osrm
+        fi
+    restart: 'no'
+    depends_on:
+      pbf-init:
+        condition: service_completed_successfully
+
+  reference-init:
+    image: debian:12.11-slim
+    volumes:
+      - osrm_data:/data
+    entrypoint: ['/bin/sh', '-c']
+    command:
+      - |
+        set -e
+        if [ ! -f /data/reference.geojsonseq ]; then
+          apt-get update -qq && apt-get install -y --no-install-recommends osmium-tool
+          osmium export /data/map.osm.pbf -o /data/reference.geojsonseq --overwrite
+        fi
+    restart: 'no'
+    depends_on:
+      pbf-init:
+        condition: service_completed_successfully
+
+  osrm:
+    image: osrm/osrm-backend:v5.25.0
+    command:
+      [
+        'osrm-routed',
+        '--algorithm',
+        'mld',
+        '--max-matching-size',
+        '${OSRM_MAX_MATCHING_SIZE:-500}',
+        '/data/map.osrm',
+      ]
+    volumes:
+      - osrm_data:/data
+    depends_on:
+      osrm-init:
+        condition: service_completed_successfully
+    healthcheck:
+      test:
+        [
+          'CMD-SHELL',
+          'bash -c "exec 3<>/dev/tcp/localhost/5000" 2>/dev/null',
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 12
+
   backend:
     build:
       context: .
@@ -26,11 +106,19 @@ services:
     depends_on:
       db:
         condition: service_healthy
+      reference-init:
+        condition: service_completed_successfully
+      osrm:
+        condition: service_healthy
     environment:
       DATABASE_URL: ${DATABASE_URL}
       DEBUG: ${DEBUG}
+      OSRM_URL: ${OSRM_URL}
+    volumes:
+      - osrm_data:/data:ro
     ports:
       - '8000:8000'
 
 volumes:
   postgres_data:
+  osrm_data:

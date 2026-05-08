@@ -9,10 +9,13 @@ from sqlalchemy.orm import Session
 
 from may_walk.models.route import Route
 from may_walk.services.reference_segments.matching import (
+    REFERENCE_MATCH_TOLERANCE_DEGREES,
     exact_reference_match,
-    nearest_reference_match,
+    nearest_directional_reference_match,
 )
 from may_walk.services.reference_segments.surface_classes import SURFACE_CLASS_VALUES
+
+ROUTE_STATS_SEGMENTIZE_DEGREES = REFERENCE_MATCH_TOLERANCE_DEGREES / 4
 
 
 @dataclass(frozen=True)
@@ -53,7 +56,10 @@ def _classified_segment_lengths_query(route_id: UUID):
     """Сформировать запрос классификации сегментов маршрута по опорной сети."""
     route_segments = _route_segments(route_id)
     exact_reference = exact_reference_match(route_segments)
-    nearest_reference = nearest_reference_match(route_segments, exact_reference)
+    nearest_reference = nearest_directional_reference_match(
+        route_segments,
+        exact_reference,
+    )
     surface_class = func.coalesce(
         exact_reference.c.surface_class,
         nearest_reference.c.surface_class,
@@ -85,7 +91,9 @@ def _classified_segment_lengths_query(route_id: UUID):
 def _route_segments(route_id: UUID):
     """Сформировать CTE отдельных сегментов маршрута."""
     segment_dump = (
-        func.ST_DumpSegments(Route.geometry)
+        func.ST_DumpSegments(
+            func.ST_Segmentize(Route.geometry, ROUTE_STATS_SEGMENTIZE_DEGREES)
+        )
         .table_valued('path', 'geom')
         .lateral('segment_dump')
     )

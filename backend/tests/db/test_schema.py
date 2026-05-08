@@ -80,6 +80,7 @@ def test_tables_exist() -> None:
         'admin_user',
         'auth_session',
         'reference_segment',
+        'reference_segment_import_state',
         'route',
     }.issubset(table_names)
 
@@ -92,10 +93,25 @@ def test_route_schema() -> None:
 
 def test_reference_segment_schema() -> None:
     """Проверить колонки, spatial index и CHECK покрытия опорных сегментов."""
-    _assert_has_columns('reference_segment', {'id', 'geometry', 'surface_class'})
+    _assert_has_columns(
+        'reference_segment',
+        {'id', 'geometry', 'surface_class'},
+    )
     assert 'ix_reference_segment_geometry' in _fetch_index_names('reference_segment')
     assert 'ck_reference_segment_surface_class' in _fetch_constraint_names(
         'reference_segment',
+        'c',
+    )
+
+
+def test_reference_segment_import_state_schema() -> None:
+    """Проверить таблицу состояния импорта опорных сегментов."""
+    _assert_has_columns(
+        'reference_segment_import_state',
+        {'id', 'source_hash', 'imported_at'},
+    )
+    assert 'ck_reference_segment_import_state_singleton' in _fetch_constraint_names(
+        'reference_segment_import_state',
         'c',
     )
 

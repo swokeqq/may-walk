@@ -3,11 +3,11 @@
 import json
 
 import pytest
+import respx
 from fastapi.testclient import TestClient
-from sqlalchemy import func
+from httpx import Response
 
-from may_walk.db.session import SessionLocal
-from may_walk.models.reference_segment import ReferenceSegment
+_OSRM_URL = 'http://osrm:5000'
 
 
 def test_route_import_requires_auth(client: TestClient) -> None:
@@ -87,11 +87,27 @@ def test_route_import_kml(authenticated_client: TestClient) -> None:
     ]
 
 
+@respx.mock
 def test_route_import_with_snap_saves_snapped_geometry(
     authenticated_client: TestClient,
 ) -> None:
-    """Проверить импорт с примагничиванием перед сохранением."""
-    _insert_reference_segment([[0, 0], [0.01, 0]])
+    """Проверить импорт с примагничиванием через OSRM перед сохранением."""
+    respx.get(url__startswith=f'{_OSRM_URL}/match').mock(
+        return_value=Response(
+            200,
+            json={
+                'code': 'Ok',
+                'matchings': [
+                    {
+                        'geometry': {
+                            'type': 'LineString',
+                            'coordinates': [[0.003, 0.0], [0.004, 0.0]],
+                        }
+                    }
+                ],
+            },
+        )
+    )
     geometry = {
         'type': 'LineString',
         'coordinates': [[0.003, 0.00005], [0.004, 0.00005]],
@@ -109,25 +125,3 @@ def test_route_import_with_snap_saves_snapped_geometry(
     assert len(coordinates[0]) == 2
     assert coordinates[0][0] == pytest.approx([0.003, 0])
     assert coordinates[0][1] == pytest.approx([0.004, 0])
-
-
-def _insert_reference_segment(coordinates: list[list[float]]) -> None:
-    """Добавить тестовый опорный сегмент."""
-    with SessionLocal() as session:
-        session.add(
-            ReferenceSegment(
-                geometry=_line_string(coordinates),
-                surface_class='asphalt',
-            )
-        )
-        session.commit()
-
-
-def _line_string(coordinates: list[list[float]]) -> object:
-    """Сформировать PostGIS LineString из координат GeoJSON."""
-    return func.ST_SetSRID(
-        func.ST_GeomFromGeoJSON(
-            json.dumps({'type': 'LineString', 'coordinates': coordinates}),
-        ),
-        4326,
-    )

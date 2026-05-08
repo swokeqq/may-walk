@@ -68,7 +68,7 @@ async def routes_import(
         Form(
             description=(
                 'Если `true`, импортированная геометрия примагничивается к '
-                'опорной сети перед сохранением. По умолчанию `false`.'
+                'OSM через OSRM перед сохранением. По умолчанию `false`.'
             ),
             examples=[False],
         ),
@@ -84,15 +84,15 @@ async def routes_import(
     `MultiLineString`.
 
     Если `snap=true`, вся импортированная геометрия перед сохранением
-    примагничивается к ближайщим дорогам. Участки без найденной дороги
-    сохраняются как есть.
+    примагничивается к дорогам через OSRM. Участки без найденного
+    совпадения или при ошибке OSRM сохраняются как есть.
     """
     filename = file.filename or ''
     content = await file.read()
     try:
         geometry = parse_route_file(filename, content)
         if snap:
-            geometry = snap_geometry(db, geometry)
+            geometry = snap_geometry(geometry)
         route = create_route(
             db,
             RouteCreateRequest(

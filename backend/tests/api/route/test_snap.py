@@ -1,13 +1,21 @@
 """Тесты endpoint'а примагничивания геометрии."""
 
-import json
-
 import pytest
+import respx
 from fastapi.testclient import TestClient
-from sqlalchemy import func
+from httpx import Response
 
-from may_walk.db.session import SessionLocal
-from may_walk.models.reference_segment import ReferenceSegment
+_OSRM_URL = 'http://osrm:5000'
+
+
+def _osrm_ok(*lines: list[list[float]]) -> dict:
+    return {
+        'code': 'Ok',
+        'matchings': [
+            {'geometry': {'type': 'LineString', 'coordinates': coords}}
+            for coords in lines
+        ],
+    }
 
 
 def test_route_snap_requires_auth(client: TestClient) -> None:
@@ -17,11 +25,14 @@ def test_route_snap_requires_auth(client: TestClient) -> None:
     assert response.status_code == 401
 
 
+@respx.mock
 def test_route_snap_returns_nearby_reference_line(
     authenticated_client: TestClient,
 ) -> None:
     """Проверить замену переданной линии ближайшей дорогой."""
-    _insert_reference_segment([[0, 0], [0.001, 0]])
+    respx.get(url__startswith=f'{_OSRM_URL}/match').mock(
+        return_value=Response(200, json=_osrm_ok([[0.0, 0.0], [0.001, 0.0]]))
+    )
 
     response = authenticated_client.post(
         '/api/routes/snap',
@@ -34,41 +45,23 @@ def test_route_snap_returns_nearby_reference_line(
     )
 
     assert response.status_code == 200
-    assert response.json()['snapped_geometry'] == {
-        'type': 'MultiLineString',
-        'coordinates': [[[0, 0], [0.001, 0]]],
-    }
+    snapped = response.json()['snapped_geometry']
+    assert snapped['type'] == 'MultiLineString'
+    coords = snapped['coordinates']
+    assert len(coords) == 1
+    assert len(coords[0]) == 2
+    assert coords[0][0] == pytest.approx([0.0, 0.0], abs=1e-5)
+    assert coords[0][1] == pytest.approx([0.001, 0.0], abs=1e-5)
 
 
-def test_route_snap_returns_reference_substring(
-    authenticated_client: TestClient,
-) -> None:
-    """Проверить возврат подотрезка дороги, а не всего опорного сегмента."""
-    _insert_reference_segment([[0, 0], [0.01, 0]])
-
-    response = authenticated_client.post(
-        '/api/routes/snap',
-        json={
-            'geometry': {
-                'type': 'LineString',
-                'coordinates': [[0.003, 0.00005], [0.004, 0.00005]],
-            }
-        },
-    )
-
-    coordinates = response.json()['snapped_geometry']['coordinates']
-
-    assert response.status_code == 200
-    assert len(coordinates) == 1
-    assert len(coordinates[0]) == 2
-    assert coordinates[0][0] == pytest.approx([0.003, 0])
-    assert coordinates[0][1] == pytest.approx([0.004, 0])
-
-
+@respx.mock
 def test_route_snap_keeps_line_without_reference_match(
     authenticated_client: TestClient,
 ) -> None:
-    """Проверить fallback на исходную линию, если дорога не найдена."""
+    """Проверить fallback на исходную линию, если OSRM не нашёл совпадения."""
+    respx.get(url__startswith=f'{_OSRM_URL}/match').mock(
+        return_value=Response(200, json={'code': 'NoMatch'})
+    )
     geometry = {
         'type': 'LineString',
         'coordinates': [[0.02, 0.02], [0.021, 0.02]],
@@ -80,17 +73,25 @@ def test_route_snap_keeps_line_without_reference_match(
     )
 
     assert response.status_code == 200
-    assert response.json()['snapped_geometry'] == {
-        'type': 'MultiLineString',
-        'coordinates': [geometry['coordinates']],
-    }
+    snapped = response.json()['snapped_geometry']
+    assert snapped['type'] == 'MultiLineString'
+    coords = snapped['coordinates']
+    assert len(coords) == 1
+    assert coords[0][0] == pytest.approx([0.02, 0.02])
+    assert coords[0][1] == pytest.approx([0.021, 0.02])
 
 
+@respx.mock
 def test_route_snap_accepts_multi_line_string(
     authenticated_client: TestClient,
 ) -> None:
     """Проверить примагничивание нескольких переданных линий."""
-    _insert_reference_segment([[0, 0], [0.001, 0]])
+    respx.get(url__startswith=f'{_OSRM_URL}/match').mock(
+        side_effect=[
+            Response(200, json=_osrm_ok([[0.0, 0.0], [0.001, 0.0]])),
+            Response(200, json={'code': 'NoMatch'}),
+        ]
+    )
 
     response = authenticated_client.post(
         '/api/routes/snap',
@@ -106,32 +107,11 @@ def test_route_snap_accepts_multi_line_string(
     )
 
     assert response.status_code == 200
-    assert response.json()['snapped_geometry'] == {
-        'type': 'MultiLineString',
-        'coordinates': [
-            [[0, 0], [0.001, 0]],
-            [[0.02, 0.02], [0.021, 0.02]],
-        ],
-    }
-
-
-def _insert_reference_segment(coordinates: list[list[float]]) -> None:
-    """Добавить тестовый опорный сегмент."""
-    with SessionLocal() as session:
-        session.add(
-            ReferenceSegment(
-                geometry=_line_string(coordinates),
-                surface_class='asphalt',
-            )
-        )
-        session.commit()
-
-
-def _line_string(coordinates: list[list[float]]) -> object:
-    """Сформировать PostGIS LineString из координат GeoJSON."""
-    return func.ST_SetSRID(
-        func.ST_GeomFromGeoJSON(
-            json.dumps({'type': 'LineString', 'coordinates': coordinates}),
-        ),
-        4326,
-    )
+    snapped = response.json()['snapped_geometry']
+    assert snapped['type'] == 'MultiLineString'
+    coords = snapped['coordinates']
+    assert len(coords) == 2
+    assert coords[0][0] == pytest.approx([0.0, 0.0], abs=1e-5)
+    assert coords[0][1] == pytest.approx([0.001, 0.0], abs=1e-5)
+    assert coords[1][0] == pytest.approx([0.02, 0.02])
+    assert coords[1][1] == pytest.approx([0.021, 0.02])

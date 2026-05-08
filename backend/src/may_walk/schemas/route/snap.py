@@ -6,11 +6,11 @@ from may_walk.schemas.geometries import GeoJSONGeometry, GeoJSONMultiLineStringG
 
 
 class RouteSnapRequest(BaseModel):
-    """Запрос примагничивания переданной линии к опорной сети."""
+    """Запрос примагничивания переданной линии к OSM через OSRM."""
 
     geometry: GeoJSONGeometry = Field(
         description=(
-            'Геометрия для примагничивания в EPSG:4326: одна линия `LineString` '
+            'Геометрия для OSRM-примагничивания в EPSG:4326: одна линия `LineString` '
             'или несколько линий `MultiLineString`.'
         ),
     )
@@ -21,7 +21,6 @@ class RouteSnapResponse(BaseModel):
 
     snapped_geometry: GeoJSONMultiLineStringGeometry = Field(
         description=(
-            'Переданная геометрия после замены найденных участков '
-            'соответствующими дорогами.'
+            'Переданная геометрия после OSRM-примагничивания найденных участков.'
         ),
     )

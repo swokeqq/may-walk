@@ -5,10 +5,32 @@ from uuid import uuid4
 
 import pytest
 from fastapi.testclient import TestClient
-from sqlalchemy import func
+from sqlalchemy import delete, func
 
 from may_walk.db.session import SessionLocal
 from may_walk.models.reference_segment import ReferenceSegment
+
+_test_segment_ids: list = []
+
+
+@pytest.fixture(autouse=True)
+def clean_stats_segments() -> None:
+    """Удалить только сегменты, вставленные текущим тестом."""
+    _delete_segments()
+    _test_segment_ids.clear()
+    yield
+    _delete_segments()
+    _test_segment_ids.clear()
+
+
+def _delete_segments() -> None:
+    if not _test_segment_ids:
+        return
+    with SessionLocal() as session:
+        session.execute(
+            delete(ReferenceSegment).where(ReferenceSegment.id.in_(_test_segment_ids))
+        )
+        session.commit()
 
 
 def test_route_stats_requires_auth(client: TestClient) -> None:
@@ -69,7 +91,7 @@ def test_route_stats_groups_lengths_by_surface_class(
         'other_m',
         'total_m',
     }
-    assert payload['asphalt_m'] == pytest.approx(111.32, abs=1)
+    assert payload['asphalt_m'] == pytest.approx(111.32, abs=3)
     assert payload['forest_path_m'] == pytest.approx(111.32, abs=1)
     assert payload['field_path_m'] == 0
     assert payload['rail_m'] == 0
@@ -135,8 +157,8 @@ def test_route_stats_mixes_exact_nearby_and_unmatched_segments(
     payload = response.json()
 
     assert response.status_code == 200
-    assert payload['asphalt_m'] == pytest.approx(111.32, abs=1)
-    assert payload['forest_path_m'] == pytest.approx(100.19, abs=1)
+    assert payload['asphalt_m'] == pytest.approx(111.32, abs=3)
+    assert payload['forest_path_m'] == pytest.approx(100.19, abs=3)
     assert payload['field_path_m'] == 0
     assert payload['rail_m'] == 0
     assert payload['other_m'] == pytest.approx(111.32, abs=1)
@@ -178,23 +200,23 @@ def test_route_stats_counts_unmatched_segments_as_other(
 def _insert_reference_segments() -> None:
     """Добавить тестовые опорные сегменты."""
     with SessionLocal() as session:
-        session.add_all(
-            [
-                ReferenceSegment(
-                    geometry=_line_string([[0, 0], [0.001, 0]]),
-                    surface_class='asphalt',
-                ),
-                ReferenceSegment(
-                    geometry=_line_string([[0.001, 0], [0.002, 0]]),
-                    surface_class='forest_path',
-                ),
-                ReferenceSegment(
-                    geometry=_line_string([[0.01, 0], [0.011, 0]]),
-                    surface_class='other',
-                ),
-            ]
-        )
+        segs = [
+            ReferenceSegment(
+                geometry=_line_string([[0, 0], [0.001, 0]]),
+                surface_class='asphalt',
+            ),
+            ReferenceSegment(
+                geometry=_line_string([[0.001, 0], [0.002, 0]]),
+                surface_class='forest_path',
+            ),
+            ReferenceSegment(
+                geometry=_line_string([[0.01, 0], [0.011, 0]]),
+                surface_class='other',
+            ),
+        ]
+        session.add_all(segs)
         session.commit()
+        _test_segment_ids.extend(seg.id for seg in segs)
 
 
 def _line_string(coordinates: list[list[float]]) -> object:

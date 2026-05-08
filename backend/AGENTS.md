@@ -15,7 +15,7 @@
 - Один DB-зависимый тест локально в PowerShell: `$env:DATABASE_URL='postgresql+psycopg://postgres:postgres@localhost:5432/may_walk'; uv run pytest tests/api/test_authentication.py`
 - Миграции: `uv run alembic upgrade head`
 - Создать первого администратора: `uv run python -m may_walk.cli create-admin`
-- Импортировать подготовленную опорную карту: `uv run python -m may_walk.cli import-reference-segments --file /path/to/reference.geojsonseq --replace`
+- Импортировать подготовленную опорную карту вручную: `uv run python -m may_walk.cli import-reference-segments --file /path/to/reference.geojsonseq --replace`
 - Локальный запуск API: `uv run uvicorn may_walk.main:app --host 0.0.0.0 --port 8000`
 
 ## Структура Кода
@@ -55,10 +55,10 @@
 
 ## Опорные Сегменты
 
-- `reference_segment` не заполняется публичным API; импорт выполняется CLI-командой `import-reference-segments`.
-- CLI принимает подготовленный и распакованный `GeoJSON` или `GeoJSONSeq` в `EPSG:4326`. Сжатые `.gz` файлы перед импортом нужно распаковать вне backend.
+- `reference_segment` не заполняется публичным API. В Docker-сценарии `reference-init` создает `/data/reference.geojsonseq` из единого PBF, а backend при старте идемпотентно запускает CLI-команду `import-reference-segments --replace-if-changed`.
+- CLI принимает подготовленный и распакованный `GeoJSON` или `GeoJSONSeq` в `EPSG:4326`. Основной локальный источник данных — PBF из `OSRM_PBF_URL`; ручной GeoJSONSeq импорт нужен только для диагностики или восстановления.
 - Неподходящие для расчетной сети OSM-объекты отбрасываются до вставки в БД; поле `is_walkable` не добавляй.
-- Без `--replace` импорт разрешен только в пустую таблицу `reference_segment`; `--replace` заменяет слой в текущей транзакции.
+- Без `--replace` импорт разрешен только в пустую таблицу `reference_segment`; `--replace` заменяет слой в текущей транзакции. `--replace-if-changed` заменяет слой только если SHA-256 файла отличается от последнего импортированного.
 
 ## Аутентификация
 
@@ -75,7 +75,7 @@
 - CRUD/import ответы маршрутов не должны возвращать `total_length_m`; длина относится к `stats` endpoint'у.
 - В stats `total_m` считается по полной длине `route.geometry`, независимо от OSM. Длины по покрытиям считаются по сегментам маршрута: сначала точное линейное совпадение с `reference_segment`, затем ближайший сегмент в пределах допуска. Несопоставленные участки попадают в `other_m`.
 - Все GeoJSON-геометрии в API должны быть в `EPSG:4326`; `LineString` на входе нормализуется в `MultiLineString`.
-- Импорт маршрутов на текущем этапе работает без snap; `snap=true` должен явно возвращать ошибку, пока OSM snap не реализован.
+- Импорт маршрутов поддерживает `snap=true`: геометрия примагничивается через OSRM `/match`, а участки без совпадения или при ошибке OSRM сохраняются как есть.
 - Для новых форматов import/export добавляй новый handler и регистрируй его в соответствующем registry, не добавляй ветвление в endpoint'ы.
 
 ## OpenAPI Документация

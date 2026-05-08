@@ -12,6 +12,7 @@ dependencies = [
     "argon2-cffi~=25.1",
     'fastapi~=0.120',
     'geoalchemy2~=0.18',
+    'httpx~=0.28',
     'psycopg[binary]~=3.2',
     'pydantic-settings~=2.11',
     "python-multipart~=0.0.20",
@@ -21,8 +22,8 @@ dependencies = [
 
 [dependency-groups]
 dev = [
-    "httpx~=0.28",
     "pytest~=8.4",
+    "respx~=0.22",
     "ruff~=0.15",
 ]
 
