@@ -8,7 +8,6 @@ from may_walk.core.authentication import hash_password
 from may_walk.db.session import SessionLocal
 from may_walk.models.admin_user import AdminUser
 from may_walk.models.auth_session import AuthSession
-from may_walk.models.reference_segment import ReferenceSegment
 from may_walk.models.route import Route
 
 
@@ -66,10 +65,9 @@ def login(client: TestClient) -> None:
 
 
 def delete_rows() -> None:
-    """Удалить данные теста."""
+    """Удалить данные теста; reference_segment чистит каждый тест сам."""
     with SessionLocal() as session:
         session.execute(delete(AuthSession))
         session.execute(delete(AdminUser))
-        session.execute(delete(ReferenceSegment))
         session.execute(delete(Route))
         session.commit()

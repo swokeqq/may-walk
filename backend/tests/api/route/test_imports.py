@@ -2,7 +2,12 @@
 
 import json
 
+import pytest
+import respx
 from fastapi.testclient import TestClient
+from httpx import Response
+
+_OSRM_URL = 'http://osrm:5000'
 
 
 def test_route_import_requires_auth(client: TestClient) -> None:
@@ -82,16 +87,41 @@ def test_route_import_kml(authenticated_client: TestClient) -> None:
     ]
 
 
-def test_route_import_with_snap_returns_error(
+@respx.mock
+def test_route_import_with_snap_saves_snapped_geometry(
     authenticated_client: TestClient,
-    line_string_geometry: dict[str, object],
 ) -> None:
-    """Проверить явный отказ от импорта со snap на текущем этапе."""
+    """Проверить импорт с примагничиванием через OSRM перед сохранением."""
+    respx.get(url__startswith=f'{_OSRM_URL}/match').mock(
+        return_value=Response(
+            200,
+            json={
+                'code': 'Ok',
+                'matchings': [
+                    {
+                        'geometry': {
+                            'type': 'LineString',
+                            'coordinates': [[0.003, 0.0], [0.004, 0.0]],
+                        }
+                    }
+                ],
+            },
+        )
+    )
+    geometry = {
+        'type': 'LineString',
+        'coordinates': [[0.003, 0.00005], [0.004, 0.00005]],
+    }
+
     response = authenticated_client.post(
         '/api/routes/import',
         data={'snap': 'true'},
-        files={'file': ('route.geojson', json.dumps(line_string_geometry))},
+        files={'file': ('route.geojson', json.dumps(geometry))},
     )
 
-    assert response.status_code == 400
-    assert response.json()['detail'] == 'Route import with snap is not supported yet'
+    assert response.status_code == 201
+    coordinates = response.json()['geometry']['coordinates']
+    assert len(coordinates) == 1
+    assert len(coordinates[0]) == 2
+    assert coordinates[0][0] == pytest.approx([0.003, 0])
+    assert coordinates[0][1] == pytest.approx([0.004, 0])
