@@ -72,6 +72,7 @@
 - CRUD endpoint'ы маршрутов живут в `src/may_walk/api/routers/route/crud.py`.
 - Импорт маршрутов живет в `src/may_walk/api/routers/route/imports.py`, экспорт — в `src/may_walk/api/routers/route/exports.py`.
 - Stats endpoint маршрутов живет в `src/may_walk/api/routers/route/stats.py`, расчет — в `src/may_walk/services/route/stats.py`.
+- Snap endpoint маршрутов живет в `src/may_walk/api/routers/route/snap.py`, расчет примагничивания — в `src/may_walk/services/route/snap.py` через OSRM `/match`.
 - CRUD/import ответы маршрутов не должны возвращать `total_length_m`; длина относится к `stats` endpoint'у.
 - В stats `total_m` считается по полной длине `route.geometry`, независимо от OSM. Длины по покрытиям считаются по сегментам маршрута: сначала точное линейное совпадение с `reference_segment`, затем ближайший сегмент в пределах допуска. Несопоставленные участки попадают в `other_m`.
 - Все GeoJSON-геометрии в API должны быть в `EPSG:4326`; `LineString` на входе нормализуется в `MultiLineString`.
