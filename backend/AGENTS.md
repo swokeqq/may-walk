@@ -27,6 +27,7 @@
 - Новые CLI-команды добавляй отдельными файлами в `src/may_walk/cli/commands/`, реализуй контракт `CliCommand` из `src/may_walk/cli/protocol.py` и регистрируй команду в `src/may_walk/cli/registry.py`. Не добавляй ветвление по именам команд в `application.py`.
 - CLI-команды не должны импортировать `may_walk.db.session` на уровне модуля: DB-зависимые импорты делай внутри `run()`, чтобы `--help` работал без `DATABASE_URL`.
 - Route CRUD-сервисы размещай в `src/may_walk/services/route/`, файловые операции маршрутов — в `src/may_walk/services/route_file/`, OSM-операции маршрутов — в `src/may_walk/services/route_osm/`.
+- Сервис объединения маршрутов размещай в `src/may_walk/services/route_osm/merge/`; ошибки объединения держи в отдельном `errors.py` внутри этого пакета.
 - Реализации route import/export форматов держи отдельными handler-классами по файлам форматов, а регистрацию форматов — в `route_file/imports/__init__.py` и `route_file/exports/__init__.py`.
 - Сервисы опорных сегментов размещай в `src/may_walk/services/reference_segments/`: классификация OSM-тегов в `classification/`, разбор подготовленных GeoJSON/GeoJSONSeq файлов в `imports/`, загрузка в БД в `storage/`.
 
@@ -73,7 +74,10 @@
 - Импорт маршрутов живет в `src/may_walk/api/routers/route_file/imports.py`, экспорт — в `src/may_walk/api/routers/route_file/exports.py`.
 - Stats endpoint маршрутов живет в `src/may_walk/api/routers/route_osm/stats.py`, расчет — в `src/may_walk/services/route_osm/stats.py`.
 - Snap endpoint маршрутов живет в `src/may_walk/api/routers/route_osm/snap.py`, расчет примагничивания — в `src/may_walk/services/route_osm/snap.py` через OSRM `/match`.
+- Merge endpoint маршрутов живет в `src/may_walk/api/routers/route_osm/merge.py`, расчет — в `src/may_walk/services/route_osm/merge/`.
 - CRUD/import ответы маршрутов не должны возвращать `total_length_m`; длина относится к `stats` endpoint'у.
+- Merge endpoint ничего не сохраняет и возвращает только `merged_geometry`; не добавляй в ответ `total_length_m`, `total_m`, `stats` или `similarity_score`.
+- В merge близкие или дублирующиеся участки схлопываются, а далекие компоненты остаются отдельными линиями в `MultiLineString`; не соединяй их искусственной линией.
 - В stats `total_m` считается по полной длине `route.geometry`, независимо от OSM. Длины по покрытиям считаются по сегментам маршрута: сначала точное линейное совпадение с `reference_segment`, затем ближайший сегмент в пределах допуска. Несопоставленные участки попадают в `other_m`.
 - Все GeoJSON-геометрии в API должны быть в `EPSG:4326`; `LineString` на входе нормализуется в `MultiLineString`.
 - Импорт маршрутов поддерживает `snap=true`: геометрия примагничивается через OSRM `/match`, а участки без совпадения или при ошибке OSRM сохраняются как есть.
