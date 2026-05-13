@@ -122,6 +122,8 @@ def test_route_snap_openapi_documents_geometry_request(
     body_schema = _resolve_ref(openapi, request_schema)
 
     assert 'geometry' in body_schema['required']
+    assert 'до 10 линий' in operation['description']
+    assert '9 уже известных линий и 1 новую линию' in operation['description']
     assert (
         'snapped_geometry'
         in _resolve_ref(
