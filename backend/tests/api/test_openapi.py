@@ -122,6 +122,8 @@ def test_route_snap_openapi_documents_geometry_request(
     body_schema = _resolve_ref(openapi, request_schema)
 
     assert 'geometry' in body_schema['required']
+    assert 'до 10 линий' in operation['description']
+    assert '9 уже известных линий и 1 новую линию' in operation['description']
     assert (
         'snapped_geometry'
         in _resolve_ref(
@@ -160,7 +162,7 @@ def test_route_merge_openapi_documents_route_ids_request(
         ('/api/routes', 'get'),
         ('/api/routes', 'post'),
         ('/api/routes/{route_id}', 'get'),
-        ('/api/routes/{route_id}', 'patch'),
+        ('/api/routes/{route_id}', 'put'),
         ('/api/routes/{route_id}', 'delete'),
         ('/api/routes/import', 'post'),
         ('/api/routes/snap', 'post'),

@@ -1,16 +1,16 @@
 # May Walk Backend
 
-Бекенд для веб приложения May Walk. API построен на FastAPI, данные хранятся в PostgreSQL/PostGIS.
+Бэкенд для веб-приложения May Walk. API построен на FastAPI, данные хранятся в PostgreSQL/PostGIS.
 
-## API Документация
+## API-документация
 
 - Swagger UI: `http://localhost:8000/docs`
 - ReDoc: `http://localhost:8000/redoc`
 - OpenAPI JSON: `http://localhost:8000/openapi.json`
 
-OpenAPI схема считается основным контрактом API. Этот документ лишь дополняет ее инструкцией запуска.
+OpenAPI-схема считается основным контрактом API. Этот документ лишь дополняет её инструкцией по запуску.
 
-## Переменные Окружения
+## Переменные окружения
 
 Все переменные окружения перечислены в `.env.example`.
 
@@ -28,7 +28,7 @@ OpenAPI схема считается основным контрактом API.
 - `OSRM_RADIUS_M` - радиус поиска OSRM `/match` в метрах.
 - `OSRM_MAX_MATCHING_SIZE` - максимальное число точек в одном OSRM `/match`.
 
-## Локальный Запуск
+## Локальный запуск
 
 Приложение локально запускается через Docker Compose.
 
@@ -48,10 +48,10 @@ cp .env.example .env
 docker compose up -d --build
 ```
 
-При первом запуске Docker Compose скачивает PBF из `OSRM_PBF_URL` в named volume,
+При первом запуске Docker Compose скачивает PBF из `OSRM_PBF_URL`,
 строит OSRM-граф, экспортирует `reference.geojsonseq`, применяет миграции и
 импортирует `reference_segment`. При последующих запусках слой опорных сегментов
-переимпортируется только если hash `reference.geojsonseq` изменился.
+переимпортируется только если хеш `reference.geojsonseq` изменился.
 
 3. Создать администратора:
 
@@ -71,17 +71,17 @@ docker compose up -d --build --force-recreate
 `reference.geojsonseq`. После этого OSRM-граф и `reference_segment` строятся из
 нового PBF.
 
-## Обновление ппорных сегментов
+## Обновление опорных сегментов
 
-Основной сценарий не требует ручного GeoJSONSeq: `reference-init` создает
-`reference.geojsonseq` из PBF через `osmium export`, а backend импортирует его
-при старте. CLI-команда остается для диагностики и ручного восстановления:
+Основной сценарий не требует ручного `GeoJSONSeq`: `reference-init` создаёт
+`reference.geojsonseq` из PBF через `osmium export`, а бэкенд импортирует его
+при старте. CLI-команда остаётся для диагностики и ручного восстановления:
 
 ```bash
 docker compose exec backend uv run python -m may_walk.cli import-reference-segments --file /data/reference.geojsonseq --replace-if-changed
 ```
 
-Backend принимает подготовленный `GeoJSON` или `GeoJSONSeq` с линейными
+Бэкенд принимает подготовленный `GeoJSON` или `GeoJSONSeq` с линейными
 объектами и OSM-тегами в `properties`. Подходящие теги: `highway`, `railway`,
 `surface`, `tracktype`, `foot` и `access`.
 
@@ -91,7 +91,7 @@ Backend принимает подготовленный `GeoJSON` или `GeoJSO
 docker compose exec backend uv run python -m may_walk.cli import-reference-segments --file /tmp/may_walk/region.geojsonseq --replace
 ```
 
-`--replace` полностью заменяет текущий слой `reference_segment` в одной транзакции. Без `--replace` импорт разрешен только в пустую таблицу.
+`--replace` полностью заменяет текущий слой `reference_segment` в одной транзакции. Без `--replace` импорт разрешён только в пустую таблицу.
 
 ## Проверка
 

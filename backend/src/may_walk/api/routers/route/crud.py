@@ -119,7 +119,7 @@ def routes_get(
     return route_response(route_with_geometry.route, route_with_geometry.geometry)
 
 
-@router.patch(
+@router.put(
     '/{route_id:uuid}',
     response_model=RouteResponse,
     responses=protected_responses(

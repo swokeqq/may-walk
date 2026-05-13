@@ -13,7 +13,7 @@ def test_routes_require_auth(client: TestClient) -> None:
         client.get('/api/routes'),
         client.post('/api/routes', json={'name': 'Route'}),
         client.get(f'/api/routes/{route_id}'),
-        client.patch(f'/api/routes/{route_id}', json={'name': 'Route'}),
+        client.put(f'/api/routes/{route_id}', json={'name': 'Route'}),
         client.delete(f'/api/routes/{route_id}'),
     ]
 
@@ -55,14 +55,14 @@ def test_route_crud_without_total_length(
     assert get_response.json()['geometry']['type'] == 'MultiLineString'
     assert 'total_length_m' not in get_response.json()
 
-    patch_response = authenticated_client.patch(
+    put_response = authenticated_client.put(
         f'/api/routes/{route_id}',
         json={'name': 'Route 1 updated'},
     )
 
-    assert patch_response.status_code == 200
-    assert patch_response.json()['name'] == 'Route 1 updated'
-    assert 'total_length_m' not in patch_response.json()
+    assert put_response.status_code == 200
+    assert put_response.json()['name'] == 'Route 1 updated'
+    assert 'total_length_m' not in put_response.json()
 
     delete_response = authenticated_client.delete(f'/api/routes/{route_id}')
 
