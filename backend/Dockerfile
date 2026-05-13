@@ -14,7 +14,8 @@ COPY alembic.ini ./
 COPY alembic ./alembic
 COPY src ./src
 COPY entrypoint.sh ./
-RUN chmod +x entrypoint.sh
+# Убираем CRLF после Windows и запускаем entrypoint.sh
+RUN sed -i 's/\r$//' entrypoint.sh && chmod +x entrypoint.sh
 
 EXPOSE 8000
 
