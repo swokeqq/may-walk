@@ -4,8 +4,8 @@ import json
 from typing import Any
 
 from may_walk.schemas.geometries import GeoJSONGeometry
-from may_walk.services.route.imports.geometry import validated_geometry
-from may_walk.services.route.imports.types import RouteImportError
+from may_walk.services.route_file.imports.geometry import validated_geometry
+from may_walk.services.route_file.imports.types import RouteImportError
 
 
 class GeoJSONImportHandler:

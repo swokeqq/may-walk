@@ -2,7 +2,7 @@
 
 from xml.etree import ElementTree
 
-from may_walk.services.route.imports.types import RouteImportError
+from may_walk.services.route_file.imports.types import RouteImportError
 
 
 def parse_xml(content: bytes, error_message: str) -> ElementTree.Element:

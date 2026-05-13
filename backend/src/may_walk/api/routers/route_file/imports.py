@@ -12,8 +12,8 @@ from may_walk.api.routers.route.responses import route_response
 from may_walk.schemas.route.crud import RouteCreateRequest, RouteResponse
 from may_walk.services.geometries import GeometryValidationError
 from may_walk.services.route.crud import create_route, get_route_with_geometry
-from may_walk.services.route.imports import RouteImportError, parse_route_file
-from may_walk.services.route.snap import snap_geometry
+from may_walk.services.route_file import RouteImportError, parse_route_file
+from may_walk.services.route_osm.snap import snap_geometry
 
 router = APIRouter(
     prefix='/api/routes',

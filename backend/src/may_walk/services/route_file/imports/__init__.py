@@ -3,10 +3,13 @@
 from pathlib import PurePath
 
 from may_walk.schemas.geometries import GeoJSONGeometry
-from may_walk.services.route.imports.geojson import GeoJSONImportHandler
-from may_walk.services.route.imports.gpx import GPXImportHandler
-from may_walk.services.route.imports.kml import KMLImportHandler
-from may_walk.services.route.imports.types import RouteImportError, RouteImportHandler
+from may_walk.services.route_file.imports.geojson import GeoJSONImportHandler
+from may_walk.services.route_file.imports.gpx import GPXImportHandler
+from may_walk.services.route_file.imports.kml import KMLImportHandler
+from may_walk.services.route_file.imports.types import (
+    RouteImportError,
+    RouteImportHandler,
+)
 
 IMPORT_HANDLERS_BY_EXTENSION: dict[str, RouteImportHandler] = {
     extension: handler

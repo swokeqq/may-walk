@@ -9,7 +9,7 @@ from may_walk.services.geometries import (
     GeometryValidationError,
     normalize_line_geometry,
 )
-from may_walk.services.route.imports.types import RouteImportError
+from may_walk.services.route_file.imports.types import RouteImportError
 
 
 def multi_line_geometry(lines: list[list[list[float]]]) -> GeoJSONGeometry:

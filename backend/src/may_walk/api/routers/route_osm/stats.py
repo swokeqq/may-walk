@@ -9,9 +9,9 @@ from sqlalchemy.orm import Session
 
 from may_walk.api.dependencies import get_db, require_auth
 from may_walk.api.responses import ROUTE_NOT_FOUND_RESPONSE, protected_responses
-from may_walk.schemas.route.stats import RouteStatsResponse
+from may_walk.schemas.route_osm.stats import RouteStatsResponse
 from may_walk.services.route.crud import get_route
-from may_walk.services.route.stats import calculate_route_stats
+from may_walk.services.route_osm.stats import calculate_route_stats
 
 router = APIRouter(
     prefix='/api/routes',

@@ -5,9 +5,9 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from may_walk.api.dependencies import require_auth
 from may_walk.api.responses import INVALID_ROUTE_GEOMETRY_RESPONSE, protected_responses
 from may_walk.schemas.geometries import GeoJSONMultiLineStringGeometry
-from may_walk.schemas.route.snap import RouteSnapRequest, RouteSnapResponse
+from may_walk.schemas.route_osm.snap import RouteSnapRequest, RouteSnapResponse
 from may_walk.services.geometries import GeometryValidationError
-from may_walk.services.route.snap import snap_geometry
+from may_walk.services.route_osm.snap import snap_geometry
 
 router = APIRouter(
     prefix='/api/routes',

@@ -6,7 +6,7 @@ from httpx import Response
 
 from may_walk.core.settings import settings
 from may_walk.schemas.geometries import GeoJSONGeometry
-from may_walk.services.route.snap import snap_geometry
+from may_walk.services.route_osm.snap import snap_geometry
 
 _OSRM_URL = 'http://osrm:5000'
 

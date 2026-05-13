@@ -26,8 +26,9 @@
 - CLI живет в пакете `src/may_walk/cli/`; `python -m may_walk.cli` работает через `src/may_walk/cli/__main__.py`.
 - Новые CLI-команды добавляй отдельными файлами в `src/may_walk/cli/commands/`, реализуй контракт `CliCommand` из `src/may_walk/cli/protocol.py` и регистрируй команду в `src/may_walk/cli/registry.py`. Не добавляй ветвление по именам команд в `application.py`.
 - CLI-команды не должны импортировать `may_walk.db.session` на уровне модуля: DB-зависимые импорты делай внутри `run()`, чтобы `--help` работал без `DATABASE_URL`.
-- Route-сервисы размещай в `src/may_walk/services/route/`: CRUD в `crud.py`, импорт в `imports/`, экспорт в `exports/`.
-- Реализации route import/export форматов держи отдельными handler-классами по файлам форматов, а регистрацию форматов — в `imports/__init__.py` и `exports/__init__.py`.
+- Route CRUD-сервисы размещай в `src/may_walk/services/route/`, файловые операции маршрутов — в `src/may_walk/services/route_file/`, OSM-операции маршрутов — в `src/may_walk/services/route_osm/`.
+- Сервис объединения маршрутов размещай в `src/may_walk/services/route_osm/merge/`; ошибки объединения держи в отдельном `errors.py` внутри этого пакета.
+- Реализации route import/export форматов держи отдельными handler-классами по файлам форматов, а регистрацию форматов — в `route_file/imports/__init__.py` и `route_file/exports/__init__.py`.
 - Сервисы опорных сегментов размещай в `src/may_walk/services/reference_segments/`: классификация OSM-тегов в `classification/`, разбор подготовленных GeoJSON/GeoJSONSeq файлов в `imports/`, загрузка в БД в `storage/`.
 
 ## Настройки И БД
@@ -70,9 +71,13 @@
 ## Маршруты
 
 - CRUD endpoint'ы маршрутов живут в `src/may_walk/api/routers/route/crud.py`.
-- Импорт маршрутов живет в `src/may_walk/api/routers/route/imports.py`, экспорт — в `src/may_walk/api/routers/route/exports.py`.
-- Stats endpoint маршрутов живет в `src/may_walk/api/routers/route/stats.py`, расчет — в `src/may_walk/services/route/stats.py`.
+- Импорт маршрутов живет в `src/may_walk/api/routers/route_file/imports.py`, экспорт — в `src/may_walk/api/routers/route_file/exports.py`.
+- Stats endpoint маршрутов живет в `src/may_walk/api/routers/route_osm/stats.py`, расчет — в `src/may_walk/services/route_osm/stats.py`.
+- Snap endpoint маршрутов живет в `src/may_walk/api/routers/route_osm/snap.py`, расчет примагничивания — в `src/may_walk/services/route_osm/snap.py` через OSRM `/match`.
+- Merge endpoint маршрутов живет в `src/may_walk/api/routers/route_osm/merge.py`, расчет — в `src/may_walk/services/route_osm/merge/`.
 - CRUD/import ответы маршрутов не должны возвращать `total_length_m`; длина относится к `stats` endpoint'у.
+- Merge endpoint ничего не сохраняет и возвращает только `merged_geometry`; не добавляй в ответ `total_length_m`, `total_m`, `stats` или `similarity_score`.
+- В merge близкие или дублирующиеся участки схлопываются, а далекие компоненты остаются отдельными линиями в `MultiLineString`; не соединяй их искусственной линией.
 - В stats `total_m` считается по полной длине `route.geometry`, независимо от OSM. Длины по покрытиям считаются по сегментам маршрута: сначала точное линейное совпадение с `reference_segment`, затем ближайший сегмент в пределах допуска. Несопоставленные участки попадают в `other_m`.
 - Все GeoJSON-геометрии в API должны быть в `EPSG:4326`; `LineString` на входе нормализуется в `MultiLineString`.
 - Импорт маршрутов поддерживает `snap=true`: геометрия примагничивается через OSRM `/match`, а участки без совпадения или при ошибке OSRM сохраняются как есть.
@@ -92,5 +97,5 @@
 - Для обычных backend-изменений повторяй порядок из CI: `uv sync --dev --frozen` -> `uv run ruff check .` -> `uv run ruff format --check .` -> `uv run pytest`.
 - DB-зависимые проверки локально запускай только после поднятия PostGIS и `uv run alembic upgrade head`.
 - Если Docker-стек поднят с проброшенным портом, локально запускай Alembic и DB-тесты с `DATABASE_URL=postgresql+psycopg://postgres:postgres@localhost:5432/may_walk`; в PowerShell задавай переменную как `$env:DATABASE_URL='postgresql+psycopg://postgres:postgres@localhost:5432/may_walk'; <command>`. Host `db` работает только внутри Docker-сети.
-- Route API-тесты лежат в `tests/api/route/`; локально их можно запускать так: `$env:DATABASE_URL='postgresql+psycopg://postgres:postgres@localhost:5432/may_walk'; uv run pytest tests/api/route`.
+- Route API-тесты лежат в `tests/api/route/`, `tests/api/route_file/` и `tests/api/route_osm/`; локально их можно запускать так: `$env:DATABASE_URL='postgresql+psycopg://postgres:postgres@localhost:5432/may_walk'; uv run pytest tests/api/route tests/api/route_file tests/api/route_osm`.
 - GitHub Actions workflow: `.github/workflows/backend-ci.yml`. Job `test` поднимает `postgis/postgis:17-3.5`, задает `DATABASE_URL`, потом применяет миграции и запускает `pytest`.

@@ -132,6 +132,28 @@ def test_route_snap_openapi_documents_geometry_request(
     assert '422' in operation['responses']
 
 
+def test_route_merge_openapi_documents_route_ids_request(
+    debug_client: TestClient,
+) -> None:
+    """Проверить OpenAPI-документацию merge endpoint'а."""
+    openapi = _openapi(debug_client)
+    operation = openapi['paths']['/api/routes/merge']['post']
+    request_schema = operation['requestBody']['content']['application/json']['schema']
+    body_schema = _resolve_ref(openapi, request_schema)
+
+    assert 'route_ids' in body_schema['required']
+    assert (
+        'merged_geometry'
+        in _resolve_ref(
+            openapi,
+            operation['responses']['200']['content']['application/json']['schema'],
+        )['properties']
+    )
+    assert '400' in operation['responses']
+    assert '404' in operation['responses']
+    assert '422' in operation['responses']
+
+
 @pytest.mark.parametrize(
     ('path', 'method'),
     [
@@ -142,6 +164,7 @@ def test_route_snap_openapi_documents_geometry_request(
         ('/api/routes/{route_id}', 'delete'),
         ('/api/routes/import', 'post'),
         ('/api/routes/snap', 'post'),
+        ('/api/routes/merge', 'post'),
         ('/api/routes/{route_id}/export', 'get'),
         ('/api/routes/{route_id}/stats', 'get'),
     ],
