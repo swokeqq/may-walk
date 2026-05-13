@@ -9,7 +9,7 @@ from sqlalchemy import delete, func
 from may_walk.db.session import SessionLocal
 from may_walk.models.reference_segment import ReferenceSegment
 from may_walk.models.route import Route
-from may_walk.services.route.stats import calculate_route_stats
+from may_walk.services.route_osm.stats import calculate_route_stats
 
 # Идентификаторы строк, вставленных в рамках текущего теста.
 _test_segment_ids: list[UUID] = []

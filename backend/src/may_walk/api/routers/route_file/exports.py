@@ -11,7 +11,7 @@ from may_walk.api.responses import ROUTE_NOT_FOUND_RESPONSE, protected_responses
 from may_walk.models.route import Route
 from may_walk.schemas.route.files import RouteExportFormat
 from may_walk.services.route.crud import get_route_with_geometry
-from may_walk.services.route.exports import export_route_file
+from may_walk.services.route_file import export_route_file
 
 router = APIRouter(
     prefix='/api/routes',

@@ -1,9 +1,9 @@
 """Импорт маршрутов из KML."""
 
 from may_walk.schemas.geometries import GeoJSONGeometry
-from may_walk.services.route.imports.geometry import multi_line_geometry
-from may_walk.services.route.imports.types import RouteImportError
-from may_walk.services.route.imports.xml_helpers import (
+from may_walk.services.route_file.imports.geometry import multi_line_geometry
+from may_walk.services.route_file.imports.types import RouteImportError
+from may_walk.services.route_file.imports.xml_helpers import (
     find_by_local_name,
     first_by_local_name,
     parse_xml,
