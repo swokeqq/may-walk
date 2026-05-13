@@ -162,7 +162,7 @@ def test_route_merge_openapi_documents_route_ids_request(
         ('/api/routes', 'get'),
         ('/api/routes', 'post'),
         ('/api/routes/{route_id}', 'get'),
-        ('/api/routes/{route_id}', 'patch'),
+        ('/api/routes/{route_id}', 'put'),
         ('/api/routes/{route_id}', 'delete'),
         ('/api/routes/import', 'post'),
         ('/api/routes/snap', 'post'),
