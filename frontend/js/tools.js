@@ -29,6 +29,12 @@ function enableHandMode() {
     style: createModifyStyle(),
   });
 
+  modifyInteraction.on("modifyend", () => {
+    if (typeof markRouteAsChanged === "function") {
+      markRouteAsChanged();
+    }
+  });
+
   map.addInteraction(modifyInteraction);
 }
 
@@ -40,6 +46,16 @@ function enableBrushMode() {
     type: "LineString",
     style: () => createLineStyle(),
   });
+
+  drawInteraction.on("drawend", (event) => {
+  if (typeof getEditingRouteId === "function") {
+    event.feature.set("routeId", getEditingRouteId());
+  }
+
+  if (typeof markRouteAsChanged === "function") {
+    setTimeout(markRouteAsChanged, 0);
+  }
+});
 
   map.addInteraction(drawInteraction);
 }
@@ -59,6 +75,10 @@ function enableEraserMode() {
     event.selected.forEach((feature) => {
       source.removeFeature(feature);
     });
+
+    if (typeof markRouteAsChanged === "function") {
+      markRouteAsChanged();
+    }
 
     selectInteraction.getFeatures().clear();
   });

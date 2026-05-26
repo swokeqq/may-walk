@@ -10,3 +10,17 @@ const exportBtn = document.getElementById("exportBtn");
 
 const toolButtons = document.querySelectorAll(".tool-btn[data-tool]");
 const layerButtons = document.querySelectorAll(".layer-btn");
+
+const authPasswordInput = document.getElementById("authPasswordInput");
+const loginBtn = document.getElementById("loginBtn");
+const logoutBtn = document.getElementById("logoutBtn");
+const authStatusText = document.getElementById("authStatusText");
+const authMessage = document.getElementById("authMessage");
+
+const routeNameInput = document.getElementById("routeNameInput");
+const newRouteBtn = document.getElementById("newRouteBtn");
+const saveRouteBtn = document.getElementById("saveRouteBtn");
+const deleteRouteBtn = document.getElementById("deleteRouteBtn");
+const routesList = document.getElementById("routesList");
+const routesMessage = document.getElementById("routesMessage");
+const currentRouteText = document.getElementById("currentRouteText");

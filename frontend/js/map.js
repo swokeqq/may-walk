@@ -75,3 +75,138 @@ const map = new ol.Map({
 map.getView().on("change:resolution", () => {
   vectorLayer.changed();
 });
+
+function getRouteFeatures(routeId = null) {
+  if (!routeId) {
+    return source.getFeatures();
+  }
+
+  return source.getFeatures().filter((feature) => {
+    return String(feature.get("routeId")) === String(routeId);
+  });
+}
+
+function getRouteGeometryFromMap(routeId = null) {
+  const features = getRouteFeatures(routeId);
+
+  if (!features.length) {
+    return null;
+  }
+
+  const format = new ol.format.GeoJSON();
+  const lines = [];
+
+  features.forEach((feature) => {
+    const geometry = feature.getGeometry();
+
+    const geojsonGeometry = format.writeGeometryObject(geometry, {
+      featureProjection: "EPSG:3857",
+      dataProjection: "EPSG:4326",
+    });
+
+    if (geojsonGeometry.type === "LineString") {
+      lines.push(geojsonGeometry.coordinates);
+    }
+
+    if (geojsonGeometry.type === "MultiLineString") {
+      lines.push(...geojsonGeometry.coordinates);
+    }
+  });
+
+  if (!lines.length) {
+    return null;
+  }
+
+  return {
+    type: "MultiLineString",
+    coordinates: lines,
+  };
+}
+
+function clearRouteFromMap(routeId = null) {
+  if (!routeId) {
+    source.clear();
+    return;
+  }
+
+  getRouteFeatures(routeId).forEach((feature) => {
+    source.removeFeature(feature);
+  });
+}
+
+function drawRouteGeometry(geometry, routeId = null, shouldClearMap = false) {
+  if (shouldClearMap) {
+    clearRouteFromMap();
+  }
+
+  if (routeId) {
+    clearRouteFromMap(routeId);
+  }
+
+  if (!geometry) {
+    return;
+  }
+
+  const format = new ol.format.GeoJSON();
+
+  function addLineFeature(lineGeometry) {
+    const feature = format.readFeature(
+      {
+        type: "Feature",
+        geometry: lineGeometry,
+        properties: {},
+      },
+      {
+        dataProjection: "EPSG:4326",
+        featureProjection: "EPSG:3857",
+      }
+    );
+
+    if (routeId) {
+      feature.set("routeId", String(routeId));
+    }
+
+    source.addFeature(feature);
+  }
+
+  if (geometry.type === "LineString") {
+    addLineFeature(geometry);
+  }
+
+  if (geometry.type === "MultiLineString") {
+    geometry.coordinates.forEach((lineCoordinates) => {
+      addLineFeature({
+        type: "LineString",
+        coordinates: lineCoordinates,
+      });
+    });
+  }
+
+  fitMapToRoute();
+}
+
+function changeRouteFeaturesId(oldRouteId, newRouteId) {
+  getRouteFeatures(oldRouteId).forEach((feature) => {
+    feature.set("routeId", String(newRouteId));
+  });
+}
+
+function fitMapToRoute() {
+  const features = source.getFeatures();
+
+  if (!features.length) {
+    return;
+  }
+
+  const extent = source.getExtent();
+
+  if (ol.extent.isEmpty(extent)) {
+    return;
+  }
+
+  map.getView().fit(extent, {
+    padding: [60, 60, 60, 60],
+    maxZoom: 16,
+    duration: 300,
+  });
+}

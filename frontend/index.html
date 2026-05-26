@@ -33,6 +33,56 @@
 
     <aside class="sidebar">
       <section class="panel-block">
+        <h3>Авторизация</h3>
+
+        <div class="auth-form">
+          <input
+            type="password"
+            id="authPasswordInput"
+            placeholder="Пароль администратора"
+            autocomplete="current-password"
+          />
+
+        <div class="auth-actions">
+          <button id="loginBtn" class="action-btn">Войти</button>
+          <button id="logoutBtn" class="action-btn secondary">Выйти</button>
+        </div>
+
+        <div class="status-row">
+          <span>Статус</span>
+          <strong id="authStatusText">Проверка...</strong>
+        </div>
+
+          <p id="authMessage" class="auth-message"></p>
+        </div>
+      </section>
+      <section class="panel-block">
+        <h3>Маршруты</h3>
+
+        <div class="routes-form">
+          <input
+            type="text"
+            id="routeNameInput"
+            placeholder="Название маршрута"
+          />
+
+          <div class="route-actions">
+            <button id="newRouteBtn" class="action-btn">Новый</button>
+            <button id="saveRouteBtn" class="action-btn">Сохранить</button>
+            <button id="deleteRouteBtn" class="action-btn danger">Удалить</button>
+          </div>
+
+          <div class="status-row">
+            <span>Текущий маршрут</span>
+            <strong id="currentRouteText">Не выбран</strong>
+          </div>
+
+          <p id="routesMessage" class="routes-message"></p>
+
+          <ul id="routesList" class="routes-list"></ul>
+        </div>
+      </section>
+      <section class="panel-block">
         <h3>Источники карты</h3>
         <div class="button-list">
           <button class="layer-btn active" data-layer="osm">OpenStreetMap</button>
