@@ -121,6 +121,40 @@ function showRoutesMessage(message, isError = false) {
   routesMessage.classList.toggle("error", isError);
 }
 
+function formatDistanceKm(meters) {
+  return `${(Number(meters || 0) / 1000).toFixed(1)} км`;
+}
+
+function resetRouteStats() {
+  asphaltDistanceText.textContent = "0.0 км";
+  forestDistanceText.textContent = "0.0 км";
+  fieldDistanceText.textContent = "0.0 км";
+  railDistanceText.textContent = "0.0 км";
+  otherDistanceText.textContent = "0.0 км";
+  totalDistanceText.textContent = "0.0 км";
+}
+
+async function updateRouteStats(routeId) {
+  if (!routeId) {
+    resetRouteStats();
+    return;
+  }
+
+  try {
+    const stats = await getRouteStats(routeId);
+
+    asphaltDistanceText.textContent = formatDistanceKm(stats.asphalt_m);
+    forestDistanceText.textContent = formatDistanceKm(stats.forest_path_m);
+    fieldDistanceText.textContent = formatDistanceKm(stats.field_path_m);
+    railDistanceText.textContent = formatDistanceKm(stats.rail_m);
+    otherDistanceText.textContent = formatDistanceKm(stats.other_m);
+    totalDistanceText.textContent = formatDistanceKm(stats.total_m);
+  } catch (error) {
+    resetRouteStats();
+    showRoutesMessage(`Не удалось загрузить статистику: ${error.message}`, true);
+  }
+}
+
 function setCurrentRoute(route) {
   currentRoute = route;
   currentRouteId = route ? String(route.id) : null;
@@ -249,6 +283,7 @@ async function openRoute(routeId) {
     drawRouteGeometry(route.geometry, route.id);
     visibleRouteIds.add(String(route.id));
     setCurrentRoute(route);
+    await updateRouteStats(route.id);
 
     showRoutesMessage("Маршрут открыт для редактирования.");
   } catch (error) {
@@ -260,6 +295,7 @@ newRouteBtn.addEventListener("click", () => {
   clearRouteFromMap(DRAFT_ROUTE_ID);
   setCurrentRoute(null);
   routeNameInput.value = "";
+  resetRouteStats();
 
   showRoutesMessage("Нарисуйте новый маршрут и нажмите “Сохранить”.");
 });
@@ -303,6 +339,7 @@ saveRouteBtn.addEventListener("click", async () => {
     }
 
     setCurrentRoute(savedRoute);
+    await updateRouteStats(savedRoute.id);
     await loadRoutes();
   } catch (error) {
     showRoutesMessage(error.message, true);
@@ -328,6 +365,7 @@ deleteRouteBtn.addEventListener("click", async () => {
     clearRouteFromMap(routeIdToDelete);
     visibleRouteIds.delete(String(routeIdToDelete));
     setCurrentRoute(null);
+    resetRouteStats();
     await loadRoutes();
 
     showRoutesMessage("Маршрут удалён.");
@@ -337,3 +375,4 @@ deleteRouteBtn.addEventListener("click", async () => {
 });
 
 loadRoutes();
+resetRouteStats();

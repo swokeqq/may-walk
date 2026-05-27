@@ -24,3 +24,10 @@ const deleteRouteBtn = document.getElementById("deleteRouteBtn");
 const routesList = document.getElementById("routesList");
 const routesMessage = document.getElementById("routesMessage");
 const currentRouteText = document.getElementById("currentRouteText");
+
+const asphaltDistanceText = document.getElementById("asphaltDistanceText");
+const forestDistanceText = document.getElementById("forestDistanceText");
+const fieldDistanceText = document.getElementById("fieldDistanceText");
+const railDistanceText = document.getElementById("railDistanceText");
+const otherDistanceText = document.getElementById("otherDistanceText");
+const totalDistanceText = document.getElementById("totalDistanceText");
