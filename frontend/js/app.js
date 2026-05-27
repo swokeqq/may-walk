@@ -19,6 +19,16 @@ layerButtons.forEach((button) => {
 
 snapToggle.addEventListener("change", () => {
   snapStatusText.textContent = snapToggle.checked ? "Включено" : "Выключено";
+
+  if (snapToggle.checked) {
+    showRoutesMessage("Примагничивание включено. Новые линии будут выравниваться по дорогам.");
+  } else {
+    showRoutesMessage("Примагничивание выключено.");
+  }
+});
+
+snapRouteBtn.addEventListener("click", () => {
+  snapCurrentEditingRoute(true);
 });
 
 undoBtn.addEventListener("click", () => {
@@ -119,6 +129,45 @@ function getEditingRouteId() {
 function showRoutesMessage(message, isError = false) {
   routesMessage.textContent = message;
   routesMessage.classList.toggle("error", isError);
+}
+
+let isSnappingRoute = false;
+
+async function snapCurrentEditingRoute(force = false) {
+  if ((!force && !snapToggle.checked) || isSnappingRoute) {
+    return;
+  }
+
+  const editingRouteId = getEditingRouteId();
+  const geometry = getRouteGeometryFromMap(editingRouteId);
+
+  if (!geometry) {
+    showRoutesMessage("Сначала выберите или нарисуйте маршрут.", true);
+    return;
+  }
+
+  try {
+    isSnappingRoute = true;
+    snapRouteBtn.disabled = true;
+    showRoutesMessage("Выполняется примагничивание маршрута...");
+
+    const result = await snapRoute(geometry);
+
+    if (!result.snapped_geometry) {
+      showRoutesMessage("Backend не вернул примагниченную геометрию.", true);
+      return;
+    }
+
+    drawRouteGeometry(result.snapped_geometry, editingRouteId);
+    markRouteAsChanged();
+
+    showRoutesMessage("Маршрут примагничен. Нажмите “Сохранить”, чтобы записать изменения.");
+  } catch (error) {
+    showRoutesMessage(`Не удалось примагнитить маршрут: ${error.message}`, true);
+  } finally {
+    isSnappingRoute = false;
+    snapRouteBtn.disabled = false;
+  }
 }
 
 function formatDistanceKm(meters) {

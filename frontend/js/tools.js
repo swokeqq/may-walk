@@ -30,10 +30,10 @@ function enableHandMode() {
   });
 
   modifyInteraction.on("modifyend", () => {
-    if (typeof markRouteAsChanged === "function") {
-      markRouteAsChanged();
-    }
-  });
+  if (typeof markRouteAsChanged === "function") {
+    markRouteAsChanged();
+  }
+});
 
   map.addInteraction(modifyInteraction);
 }
@@ -54,6 +54,10 @@ function enableBrushMode() {
 
   if (typeof markRouteAsChanged === "function") {
     setTimeout(markRouteAsChanged, 0);
+  }
+
+  if (typeof snapCurrentEditingRoute === "function") {
+    setTimeout(snapCurrentEditingRoute, 0);
   }
 });
 

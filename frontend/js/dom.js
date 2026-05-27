@@ -31,3 +31,4 @@ const fieldDistanceText = document.getElementById("fieldDistanceText");
 const railDistanceText = document.getElementById("railDistanceText");
 const otherDistanceText = document.getElementById("otherDistanceText");
 const totalDistanceText = document.getElementById("totalDistanceText");
+const snapRouteBtn = document.getElementById("snapRouteBtn");

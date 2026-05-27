@@ -303,3 +303,8 @@ input {
   background: #ffffff;
   font-size: 14px;
 }
+
+.snap-route-btn {
+  width: 100%;
+  margin-top: 10px;
+}
