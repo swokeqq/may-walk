@@ -25,6 +25,11 @@ const routesList = document.getElementById("routesList");
 const routesMessage = document.getElementById("routesMessage");
 const currentRouteText = document.getElementById("currentRouteText");
 
+const exportModal = document.getElementById("exportModal");
+const exportFormatSelect = document.getElementById("exportFormatSelect");
+const confirmExportBtn = document.getElementById("confirmExportBtn");
+const closeExportModalBtn = document.getElementById("closeExportModalBtn");
+
 const asphaltDistanceText = document.getElementById("asphaltDistanceText");
 const forestDistanceText = document.getElementById("forestDistanceText");
 const fieldDistanceText = document.getElementById("fieldDistanceText");

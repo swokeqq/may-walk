@@ -39,12 +39,75 @@ redoBtn.addEventListener("click", () => {
   alert("Повтор действия пока не реализован.");
 });
 
+const fileInputElement = document.createElement("input");
+fileInputElement.type = "file";
+fileInputElement.accept = ".gpx,.kml,.kmz,.geojson,.json";
+fileInputElement.style.display = "none";
+document.body.appendChild(fileInputElement);
+
 importBtn.addEventListener("click", () => {
-  alert("Импорт GPX/KML/KMZ пока не реализован.");
+  fileInputElement.click();
+});
+
+fileInputElement.addEventListener("change", async (event) => {
+  const file = event.target.files[0];
+  if (!file) return;
+
+  try {
+    showRoutesMessage("Импортирование файла маршрута...");
+    const baseName = file.name.replace(/\.[^/.]+$/, "");
+    const isSnapEnabled = snapToggle.checked;
+
+    const importedRoute = await importRoute(file, isSnapEnabled, baseName);
+    
+    showRoutesMessage("Маршрут успешно импортирован!");
+    await loadRoutes();
+
+    if (importedRoute && importedRoute.id) {
+      await openRoute(importedRoute.id);
+    }
+  } catch (error) {
+    showRoutesMessage(`Ошибка импорта: ${error.message}`, true);
+  } finally {
+    fileInputElement.value = "";
+  }
 });
 
 exportBtn.addEventListener("click", () => {
-  alert("Экспорт GPX/KML/KMZ пока не реализован.");
+  if (!currentRouteId) {
+    showRoutesMessage("Сначала выберите сохранённый маршрут для экспорта.", true);
+    return;
+  }
+  exportModal.classList.remove("hidden");
+});
+
+closeExportModalBtn.addEventListener("click", () => {
+  exportModal.classList.add("hidden");
+});
+
+confirmExportBtn.addEventListener("click", async () => {
+  const selectedFormat = exportFormatSelect.value;
+  exportModal.classList.add("hidden");
+
+  try {
+    showRoutesMessage("Формирование файла экспорта...");
+    const blob = await exportRoute(currentRouteId, selectedFormat);
+
+    const downloadUrl = URL.createObjectURL(blob);
+    const downloadAnchor = document.createElement("a");
+    downloadAnchor.href = downloadUrl;
+    downloadAnchor.download = `${currentRoute ? currentRoute.name : "route"}.${selectedFormat}`;
+    
+    document.body.appendChild(downloadAnchor);
+    downloadAnchor.click();
+    
+    document.body.removeChild(downloadAnchor);
+    URL.revokeObjectURL(downloadUrl);
+
+    showRoutesMessage("Маршрут успешно экспортирован.");
+  } catch (error) {
+    showRoutesMessage(`Ошибка экспорта: ${error.message}`, true);
+  }
 });
 
 setTool("hand");
