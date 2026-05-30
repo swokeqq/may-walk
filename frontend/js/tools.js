@@ -29,6 +29,12 @@ function enableHandMode() {
     style: createModifyStyle(),
   });
 
+  modifyInteraction.on("modifystart", () => {
+    if (typeof saveRouteStateForUndo === "function") {
+      saveRouteStateForUndo();
+    }
+  });
+
   modifyInteraction.on("modifyend", () => {
   if (typeof markRouteAsChanged === "function") {
     markRouteAsChanged();
@@ -45,6 +51,12 @@ function enableBrushMode() {
     source: source,
     type: "LineString",
     style: () => createLineStyle(),
+  });
+
+  drawInteraction.on("drawstart", () => {
+    if (typeof saveRouteStateForUndo === "function") {
+      saveRouteStateForUndo();
+    }
   });
 
   drawInteraction.on("drawend", (event) => {
@@ -77,6 +89,10 @@ function enableEraserMode() {
     if (!event.selected.length) return;
 
     event.selected.forEach((feature) => {
+      if (typeof saveRouteStateForUndo === "function") {
+        saveRouteStateForUndo();
+      }
+
       source.removeFeature(feature);
     });
 

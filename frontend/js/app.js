@@ -32,11 +32,11 @@ snapRouteBtn.addEventListener("click", () => {
 });
 
 undoBtn.addEventListener("click", () => {
-  alert("Отмена действия пока не реализована.");
+  undoRouteChange();
 });
 
 redoBtn.addEventListener("click", () => {
-  alert("Повтор действия пока не реализован.");
+  redoRouteChange();
 });
 
 const fileInputElement = document.createElement("input");
@@ -185,6 +185,101 @@ let currentRoute = null;
 let isRouteChanged = false;
 let visibleRouteIds = new Set();
 
+const undoStack = [];
+const redoStack = [];
+const MAX_HISTORY_LENGTH = 50;
+
+let isApplyingHistory = false;
+
+function cloneGeometry(geometry) {
+  return geometry ? JSON.parse(JSON.stringify(geometry)) : null;
+}
+
+function createRouteSnapshot() {
+  const routeId = getEditingRouteId();
+
+  return {
+    routeId,
+    geometry: cloneGeometry(getRouteGeometryFromMap(routeId)),
+  };
+}
+
+function updateUndoRedoButtons() {
+  undoBtn.disabled = undoStack.length === 0;
+  redoBtn.disabled = redoStack.length === 0;
+}
+
+function clearRouteHistory() {
+  undoStack.length = 0;
+  redoStack.length = 0;
+  updateUndoRedoButtons();
+}
+
+function saveRouteStateForUndo() {
+  if (isApplyingHistory) {
+    return;
+  }
+
+  undoStack.push(createRouteSnapshot());
+
+  if (undoStack.length > MAX_HISTORY_LENGTH) {
+    undoStack.shift();
+  }
+
+  redoStack.length = 0;
+  updateUndoRedoButtons();
+}
+
+function restoreRouteSnapshot(snapshot) {
+  if (!snapshot) {
+    return;
+  }
+
+  isApplyingHistory = true;
+
+  clearRouteFromMap(snapshot.routeId);
+
+  if (snapshot.geometry) {
+    drawRouteGeometry(snapshot.geometry, snapshot.routeId);
+  }
+
+  isApplyingHistory = false;
+}
+
+function undoRouteChange() {
+  if (!undoStack.length) {
+    showRoutesMessage("Нет действий для отмены.", true);
+    return;
+  }
+
+  const currentSnapshot = createRouteSnapshot();
+  const previousSnapshot = undoStack.pop();
+
+  redoStack.push(currentSnapshot);
+  restoreRouteSnapshot(previousSnapshot);
+  markRouteAsChanged();
+  updateUndoRedoButtons();
+
+  showRoutesMessage("Действие отменено. Нажмите “Сохранить”, чтобы записать изменения.");
+}
+
+function redoRouteChange() {
+  if (!redoStack.length) {
+    showRoutesMessage("Нет действий для повтора.", true);
+    return;
+  }
+
+  const currentSnapshot = createRouteSnapshot();
+  const nextSnapshot = redoStack.pop();
+
+  undoStack.push(currentSnapshot);
+  restoreRouteSnapshot(nextSnapshot);
+  markRouteAsChanged();
+  updateUndoRedoButtons();
+
+  showRoutesMessage("Действие повторено. Нажмите “Сохранить”, чтобы записать изменения.");
+}
+
 function getEditingRouteId() {
   return currentRouteId || DRAFT_ROUTE_ID;
 }
@@ -221,6 +316,7 @@ async function snapCurrentEditingRoute(force = false) {
       return;
     }
 
+    saveRouteStateForUndo();
     drawRouteGeometry(result.snapped_geometry, editingRouteId);
     markRouteAsChanged();
 
@@ -275,6 +371,7 @@ function setCurrentRoute(route) {
   currentRouteText.textContent = route ? route.name : "Не выбран";
   routeNameInput.value = route ? route.name : "";
 
+  clearRouteHistory();
   renderActiveRoute();
 }
 
@@ -488,3 +585,4 @@ deleteRouteBtn.addEventListener("click", async () => {
 
 loadRoutes();
 resetRouteStats();
+updateUndoRedoButtons();
