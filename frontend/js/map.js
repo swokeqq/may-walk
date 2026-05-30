@@ -86,9 +86,13 @@ function getRouteFeatures(routeId = null) {
   });
 }
 
-function getRouteGeometryFromMap(routeId = null) {
+function getLastRouteFeatures(routeId, limit = 10) {
   const features = getRouteFeatures(routeId);
 
+  return features.slice(-limit);
+}
+
+function getRouteGeometryFromFeatures(features) {
   if (!features.length) {
     return null;
   }
@@ -123,6 +127,10 @@ function getRouteGeometryFromMap(routeId = null) {
   };
 }
 
+function getRouteGeometryFromMap(routeId = null) {
+  return getRouteGeometryFromFeatures(getRouteFeatures(routeId));
+}
+
 function clearRouteFromMap(routeId = null) {
   if (!routeId) {
     source.clear();
@@ -134,15 +142,7 @@ function clearRouteFromMap(routeId = null) {
   });
 }
 
-function drawRouteGeometry(geometry, routeId = null, shouldClearMap = false) {
-  if (shouldClearMap) {
-    clearRouteFromMap();
-  }
-
-  if (routeId) {
-    clearRouteFromMap(routeId);
-  }
-
+function addRouteGeometryToMap(geometry, routeId = null) {
   if (!geometry) {
     return;
   }
@@ -181,7 +181,27 @@ function drawRouteGeometry(geometry, routeId = null, shouldClearMap = false) {
       });
     });
   }
+}
 
+function drawRouteGeometry(geometry, routeId = null, shouldClearMap = false) {
+  if (shouldClearMap) {
+    clearRouteFromMap();
+  }
+
+  if (routeId) {
+    clearRouteFromMap(routeId);
+  }
+
+  addRouteGeometryToMap(geometry, routeId);
+  fitMapToRoute();
+}
+
+function replaceRouteFeaturesWithGeometry(routeId, featuresToReplace, geometry) {
+  featuresToReplace.forEach((feature) => {
+    source.removeFeature(feature);
+  });
+
+  addRouteGeometryToMap(geometry, routeId);
   fitMapToRoute();
 }
 

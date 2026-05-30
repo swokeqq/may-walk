@@ -179,6 +179,7 @@ authPasswordInput.addEventListener("keydown", (evt) => {
 updateAuthStatus();
 
 const DRAFT_ROUTE_ID = "__draft_route__";
+const SNAP_CONTEXT_LINES_COUNT = 10;
 
 let currentRouteId = null;
 let currentRoute = null;
@@ -297,7 +298,8 @@ async function snapCurrentEditingRoute(force = false) {
   }
 
   const editingRouteId = getEditingRouteId();
-  const geometry = getRouteGeometryFromMap(editingRouteId);
+  const snapFeatures = getLastRouteFeatures(editingRouteId, SNAP_CONTEXT_LINES_COUNT);
+  const geometry = getRouteGeometryFromFeatures(snapFeatures);
 
   if (!geometry) {
     showRoutesMessage("Сначала выберите или нарисуйте маршрут.", true);
@@ -307,7 +309,7 @@ async function snapCurrentEditingRoute(force = false) {
   try {
     isSnappingRoute = true;
     snapRouteBtn.disabled = true;
-    showRoutesMessage("Выполняется примагничивание маршрута...");
+    showRoutesMessage(`Выполняется примагничивание последних ${snapFeatures.length} линий маршрута...`);
 
     const result = await snapRoute(geometry);
 
@@ -317,10 +319,10 @@ async function snapCurrentEditingRoute(force = false) {
     }
 
     saveRouteStateForUndo();
-    drawRouteGeometry(result.snapped_geometry, editingRouteId);
+    replaceRouteFeaturesWithGeometry(editingRouteId, snapFeatures, result.snapped_geometry);
     markRouteAsChanged();
 
-    showRoutesMessage("Маршрут примагничен. Нажмите “Сохранить”, чтобы записать изменения.");
+    showRoutesMessage("Участок маршрута примагничен. Нажмите “Сохранить”, чтобы записать изменения.");
   } catch (error) {
     showRoutesMessage(`Не удалось примагнитить маршрут: ${error.message}`, true);
   } finally {
