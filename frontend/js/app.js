@@ -41,7 +41,7 @@ redoBtn.addEventListener("click", () => {
 
 const fileInputElement = document.createElement("input");
 fileInputElement.type = "file";
-fileInputElement.accept = ".gpx,.kml,.kmz,.geojson,.json";
+fileInputElement.accept = ".gpx,.kml,.geojson,.json";
 fileInputElement.style.display = "none";
 document.body.appendChild(fileInputElement);
 
