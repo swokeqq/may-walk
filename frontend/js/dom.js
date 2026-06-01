@@ -20,6 +20,7 @@ const authMessage = document.getElementById("authMessage");
 const routeNameInput = document.getElementById("routeNameInput");
 const newRouteBtn = document.getElementById("newRouteBtn");
 const saveRouteBtn = document.getElementById("saveRouteBtn");
+const mergeRoutesBtn = document.getElementById("mergeRoutesBtn");
 const deleteRouteBtn = document.getElementById("deleteRouteBtn");
 const routesList = document.getElementById("routesList");
 const routesMessage = document.getElementById("routesMessage");

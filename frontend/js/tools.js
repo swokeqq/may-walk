@@ -36,10 +36,10 @@ function enableHandMode() {
   });
 
   modifyInteraction.on("modifyend", () => {
-  if (typeof markRouteAsChanged === "function") {
-    markRouteAsChanged();
-  }
-});
+    if (typeof markRouteAsChanged === "function") {
+      markRouteAsChanged();
+    }
+  });
 
   map.addInteraction(modifyInteraction);
 }
@@ -50,6 +50,7 @@ function enableBrushMode() {
   drawInteraction = new ol.interaction.Draw({
     source: source,
     type: "LineString",
+    maxPoints: 2,
     style: () => createLineStyle(),
   });
 
@@ -60,17 +61,23 @@ function enableBrushMode() {
   });
 
   drawInteraction.on("drawend", (event) => {
-  if (typeof getEditingRouteId === "function") {
-    event.feature.set("routeId", getEditingRouteId());
-  }
+    if (typeof getEditingRouteId === "function") {
+      event.feature.set("routeId", getEditingRouteId());
+    }
 
-  if (typeof markRouteAsChanged === "function") {
-    setTimeout(markRouteAsChanged, 0);
-  }
+    if (typeof markRouteAsChanged === "function") {
+      setTimeout(markRouteAsChanged, 0);
+    }
 
-  if (typeof snapCurrentEditingRoute === "function") {
-    setTimeout(snapCurrentEditingRoute, 0);
-  }
+    if (typeof snapCurrentEditingRoute === "function") {
+      setTimeout(snapCurrentEditingRoute, 0);
+    }
+
+  setTimeout(() => {
+    if (activeTool === "brush") {
+      setTool("brush");
+    }
+  }, 100);
 });
 
   map.addInteraction(drawInteraction);

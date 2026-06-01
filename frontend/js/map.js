@@ -149,11 +149,18 @@ function addRouteGeometryToMap(geometry, routeId = null) {
 
   const format = new ol.format.GeoJSON();
 
-  function addLineFeature(lineGeometry) {
+  function addLineFeature(lineCoordinates) {
+    if (!lineCoordinates || lineCoordinates.length < 2) {
+      return;
+    }
+
     const feature = format.readFeature(
       {
         type: "Feature",
-        geometry: lineGeometry,
+        geometry: {
+          type: "LineString",
+          coordinates: lineCoordinates,
+        },
         properties: {},
       },
       {
@@ -169,16 +176,23 @@ function addRouteGeometryToMap(geometry, routeId = null) {
     source.addFeature(feature);
   }
 
+  function addLineAsSegments(coordinates) {
+    if (!coordinates || coordinates.length < 2) {
+      return;
+    }
+
+    for (let i = 0; i < coordinates.length - 1; i++) {
+      addLineFeature([coordinates[i], coordinates[i + 1]]);
+    }
+  }
+
   if (geometry.type === "LineString") {
-    addLineFeature(geometry);
+    addLineAsSegments(geometry.coordinates);
   }
 
   if (geometry.type === "MultiLineString") {
     geometry.coordinates.forEach((lineCoordinates) => {
-      addLineFeature({
-        type: "LineString",
-        coordinates: lineCoordinates,
-      });
+      addLineAsSegments(lineCoordinates);
     });
   }
 }
@@ -196,13 +210,16 @@ function drawRouteGeometry(geometry, routeId = null, shouldClearMap = false) {
   fitMapToRoute();
 }
 
-function replaceRouteFeaturesWithGeometry(routeId, featuresToReplace, geometry) {
+function replaceRouteFeaturesWithGeometry(routeId, featuresToReplace, geometry, shouldFit = true) {
   featuresToReplace.forEach((feature) => {
     source.removeFeature(feature);
   });
 
   addRouteGeometryToMap(geometry, routeId);
-  fitMapToRoute();
+
+  if (shouldFit) {
+    fitMapToRoute();
+  }
 }
 
 function changeRouteFeaturesId(oldRouteId, newRouteId) {

@@ -366,3 +366,7 @@ input {
 .action-btn.secondary.danger:hover {
   background: #fee2e2;
 }
+
+#mergeRoutesBtn {
+  grid-column: 1 / -1;
+}

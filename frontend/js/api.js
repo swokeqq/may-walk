@@ -1,4 +1,4 @@
-const API_BASE_URL = "http://localhost:18000/api";
+const API_BASE_URL = "http://localhost:8000/api";
 
 async function requestApi(path, options = {}) {
   const response = await fetch(`${API_BASE_URL}${path}`, {
@@ -107,4 +107,13 @@ async function importRoute(file, snap = false, name = "") {
 
 async function exportRoute(routeId, format = "geojson") {
   return requestApi(`/routes/${routeId}/export?format=${format}`);
+}
+
+async function mergeRoutes(routeIds) {
+  return requestApi("/routes/merge", {
+    method: "POST",
+    body: JSON.stringify({
+      route_ids: routeIds,
+    }),
+  });
 }

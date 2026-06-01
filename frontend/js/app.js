@@ -150,6 +150,8 @@ loginBtn.addEventListener("click", async () => {
       setAuthStatus(true);
       showAuthMessage("Вход выполнен успешно.");
       authPasswordInput.value = "";
+
+      await loadRoutes();
     } else {
       setAuthStatus(false);
       showAuthMessage("Неверный пароль.", true);
@@ -180,6 +182,7 @@ updateAuthStatus();
 
 const DRAFT_ROUTE_ID = "__draft_route__";
 const SNAP_CONTEXT_LINES_COUNT = 10;
+const SNAP_FULL_ROUTE_CHUNK_SIZE = 10;
 
 let currentRouteId = null;
 let currentRoute = null;
@@ -292,37 +295,89 @@ function showRoutesMessage(message, isError = false) {
 
 let isSnappingRoute = false;
 
-async function snapCurrentEditingRoute(force = false) {
-  if ((!force && !snapToggle.checked) || isSnappingRoute) {
+async function snapFeatureGroup(routeId, features, shouldFit = false) {
+  const geometry = getRouteGeometryFromFeatures(features);
+
+  if (!geometry) {
+    return false;
+  }
+
+  const result = await snapRoute(geometry);
+
+  if (!result.snapped_geometry) {
+    throw new Error("Backend не вернул примагниченную геометрию.");
+  }
+
+  replaceRouteFeaturesWithGeometry(routeId, features, result.snapped_geometry, shouldFit);
+
+  return true;
+}
+
+async function snapLastRouteLines() {
+  const editingRouteId = getEditingRouteId();
+  const snapFeatures = getLastRouteFeatures(editingRouteId, SNAP_CONTEXT_LINES_COUNT);
+
+  if (!snapFeatures.length) {
+    showRoutesMessage("Сначала выберите или нарисуйте маршрут.", true);
     return;
   }
 
-  const editingRouteId = getEditingRouteId();
-  const snapFeatures = getLastRouteFeatures(editingRouteId, SNAP_CONTEXT_LINES_COUNT);
-  const geometry = getRouteGeometryFromFeatures(snapFeatures);
+  saveRouteStateForUndo();
 
-  if (!geometry) {
-    showRoutesMessage("Сначала выберите или нарисуйте маршрут.", true);
+  showRoutesMessage(`Выполняется примагничивание последних ${snapFeatures.length} линий маршрута...`);
+
+  await snapFeatureGroup(editingRouteId, snapFeatures, true);
+
+  markRouteAsChanged();
+  showRoutesMessage("Участок маршрута примагничен. Нажмите “Сохранить”, чтобы записать изменения.");
+}
+
+async function snapFullCurrentRoute() {
+  const editingRouteId = getEditingRouteId();
+  const routeFeatures = getRouteFeatures(editingRouteId);
+
+  if (!routeFeatures.length) {
+    showRoutesMessage("Сначала выберите или импортируйте маршрут.", true);
+    return;
+  }
+
+  saveRouteStateForUndo();
+
+  for (let i = 0; i < routeFeatures.length; i += SNAP_FULL_ROUTE_CHUNK_SIZE) {
+    const chunk = routeFeatures.slice(i, i + SNAP_FULL_ROUTE_CHUNK_SIZE);
+    const processedCount = Math.min(i + SNAP_FULL_ROUTE_CHUNK_SIZE, routeFeatures.length);
+
+    showRoutesMessage(
+      `Примагничивание маршрута: обработано ${processedCount} из ${routeFeatures.length} участков...`
+    );
+
+    await snapFeatureGroup(editingRouteId, chunk, false);
+  }
+
+  fitMapToRoute();
+  markRouteAsChanged();
+
+  showRoutesMessage("Весь маршрут примагничен. Нажмите “Сохранить”, чтобы записать изменения.");
+}
+
+async function snapCurrentEditingRoute(force = false) {
+  if (isSnappingRoute) {
+    return;
+  }
+
+  if (!force && !snapToggle.checked) {
     return;
   }
 
   try {
     isSnappingRoute = true;
     snapRouteBtn.disabled = true;
-    showRoutesMessage(`Выполняется примагничивание последних ${snapFeatures.length} линий маршрута...`);
 
-    const result = await snapRoute(geometry);
-
-    if (!result.snapped_geometry) {
-      showRoutesMessage("Backend не вернул примагниченную геометрию.", true);
-      return;
+    if (force) {
+      await snapFullCurrentRoute();
+    } else {
+      await snapLastRouteLines();
     }
-
-    saveRouteStateForUndo();
-    replaceRouteFeaturesWithGeometry(editingRouteId, snapFeatures, result.snapped_geometry);
-    markRouteAsChanged();
-
-    showRoutesMessage("Участок маршрута примагничен. Нажмите “Сохранить”, чтобы записать изменения.");
   } catch (error) {
     showRoutesMessage(`Не удалось примагнитить маршрут: ${error.message}`, true);
   } finally {
@@ -554,6 +609,40 @@ saveRouteBtn.addEventListener("click", async () => {
     await loadRoutes();
   } catch (error) {
     showRoutesMessage(error.message, true);
+  }
+});
+
+mergeRoutesBtn.addEventListener("click", async () => {
+  const routeIds = Array.from(visibleRouteIds);
+
+  if (routeIds.length < 2) {
+    showRoutesMessage("Для объединения выберите галочками минимум два маршрута.", true);
+    return;
+  }
+
+  try {
+    showRoutesMessage("Выполняется объединение выбранных маршрутов...");
+
+    const result = await mergeRoutes(routeIds);
+
+    if (!result.merged_geometry) {
+      showRoutesMessage("Backend не вернул объединённую геометрию.", true);
+      return;
+    }
+
+    clearRouteFromMap(DRAFT_ROUTE_ID);
+    drawRouteGeometry(result.merged_geometry, DRAFT_ROUTE_ID);
+
+    setCurrentRoute(null);
+    routeNameInput.value = "Объединённый маршрут";
+    resetRouteStats();
+    clearRouteHistory();
+
+    showRoutesMessage(
+      "Маршруты объединены на карте. Введите название и нажмите “Сохранить”, чтобы создать новый маршрут."
+    );
+  } catch (error) {
+    showRoutesMessage(`Не удалось объединить маршруты: ${error.message}`, true);
   }
 });
 
