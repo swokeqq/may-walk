@@ -181,7 +181,7 @@ authPasswordInput.addEventListener("keydown", (evt) => {
 updateAuthStatus();
 
 const DRAFT_ROUTE_ID = "__draft_route__";
-const SNAP_CONTEXT_LINES_COUNT = 10;
+const SNAP_CONTEXT_LINES_COUNT = 3;
 const SNAP_FULL_ROUTE_CHUNK_SIZE = 10;
 
 let currentRouteId = null;
@@ -294,6 +294,7 @@ function showRoutesMessage(message, isError = false) {
 }
 
 let isSnappingRoute = false;
+let shouldSnapRouteAgain = false;
 
 async function snapFeatureGroup(routeId, features, shouldFit = false) {
   const geometry = getRouteGeometryFromFeatures(features);
@@ -362,6 +363,10 @@ async function snapFullCurrentRoute() {
 
 async function snapCurrentEditingRoute(force = false) {
   if (isSnappingRoute) {
+    if (!force && snapToggle.checked) {
+      shouldSnapRouteAgain = true;
+    }
+
     return;
   }
 
@@ -383,6 +388,11 @@ async function snapCurrentEditingRoute(force = false) {
   } finally {
     isSnappingRoute = false;
     snapRouteBtn.disabled = false;
+
+    if (shouldSnapRouteAgain && snapToggle.checked) {
+      shouldSnapRouteAgain = false;
+      setTimeout(() => snapCurrentEditingRoute(false), 0);
+    }
   }
 }
 
