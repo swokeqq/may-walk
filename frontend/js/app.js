@@ -181,7 +181,7 @@ authPasswordInput.addEventListener("keydown", (evt) => {
 updateAuthStatus();
 
 const DRAFT_ROUTE_ID = "__draft_route__";
-const SNAP_CONTEXT_LINES_COUNT = 10;
+const SNAP_CONTEXT_LINES_COUNT = 3;
 const SNAP_FULL_ROUTE_CHUNK_SIZE = 10;
 
 let currentRouteId = null;

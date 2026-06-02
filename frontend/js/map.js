@@ -3,6 +3,12 @@ let activeLayer = "osm";
 let drawInteraction = null;
 let selectInteraction = null;
 let modifyInteraction = null;
+let routeFeatureOrder = 0;
+
+function assignRouteFeatureOrder(feature) {
+  routeFeatureOrder += 1;
+  feature.set("routeOrder", routeFeatureOrder);
+}
 
 function getLineWidth() {
   const zoom = map.getView().getZoom() || 12;
@@ -77,13 +83,20 @@ map.getView().on("change:resolution", () => {
 });
 
 function getRouteFeatures(routeId = null) {
+  const sortByRouteOrder = (a, b) => {
+    return (a.get("routeOrder") || 0) - (b.get("routeOrder") || 0);
+  };
+
   if (!routeId) {
-    return source.getFeatures();
+    return source.getFeatures().sort(sortByRouteOrder);
   }
 
-  return source.getFeatures().filter((feature) => {
-    return String(feature.get("routeId")) === String(routeId);
-  });
+  return source
+    .getFeatures()
+    .filter((feature) => {
+      return String(feature.get("routeId")) === String(routeId);
+    })
+    .sort(sortByRouteOrder);
 }
 
 function getLastRouteFeatures(routeId, limit = 10) {
@@ -173,6 +186,7 @@ function addRouteGeometryToMap(geometry, routeId = null) {
       feature.set("routeId", String(routeId));
     }
 
+    assignRouteFeatureOrder(feature);
     source.addFeature(feature);
   }
 

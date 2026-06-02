@@ -65,6 +65,10 @@ function enableBrushMode() {
       event.feature.set("routeId", getEditingRouteId());
     }
 
+    if (typeof assignRouteFeatureOrder === "function") {
+      assignRouteFeatureOrder(event.feature);
+    }
+
     if (typeof markRouteAsChanged === "function") {
       setTimeout(markRouteAsChanged, 0);
     }
