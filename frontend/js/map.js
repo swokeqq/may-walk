@@ -211,7 +211,7 @@ function addRouteGeometryToMap(geometry, routeId = null) {
   }
 }
 
-function drawRouteGeometry(geometry, routeId = null, shouldClearMap = false) {
+function drawRouteGeometry(geometry, routeId = null, shouldClearMap = false, shouldFit = true) {
   if (shouldClearMap) {
     clearRouteFromMap();
   }
@@ -221,7 +221,10 @@ function drawRouteGeometry(geometry, routeId = null, shouldClearMap = false) {
   }
 
   addRouteGeometryToMap(geometry, routeId);
-  fitMapToRoute();
+
+  if (shouldFit) {
+    fitMapToRoute();
+  }
 }
 
 function replaceRouteFeaturesWithGeometry(routeId, featuresToReplace, geometry, shouldFit = true) {

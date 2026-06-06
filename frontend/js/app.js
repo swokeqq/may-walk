@@ -46,38 +46,64 @@ fileInputElement.style.display = "none";
 document.body.appendChild(fileInputElement);
 
 importBtn.addEventListener("click", () => {
+  if (isImportingRoute) {
+    return;
+  }
+
+  if (!confirmDiscardUnsavedChanges()) {
+    return;
+  }
+
   fileInputElement.click();
 });
 
 fileInputElement.addEventListener("change", async (event) => {
+  if (isImportingRoute) {
+    return;
+  }
+
   const file = event.target.files[0];
-  if (!file) return;
+
+  if (!file) {
+    return;
+  }
 
   try {
+    isImportingRoute = true;
+    setButtonLoading(importBtn, true, "⏳");
+
     showRoutesMessage("Импортирование файла маршрута...");
     const baseName = file.name.replace(/\.[^/.]+$/, "");
     const isSnapEnabled = snapToggle.checked;
 
     const importedRoute = await importRoute(file, isSnapEnabled, baseName);
-    
+
     showRoutesMessage("Маршрут успешно импортирован!");
     await loadRoutes();
 
     if (importedRoute && importedRoute.id) {
-      await openRoute(importedRoute.id);
+      isRouteChanged = false;
+      await openRoute(importedRoute.id, true);
     }
   } catch (error) {
     showRoutesMessage(`Ошибка импорта: ${error.message}`, true);
   } finally {
+    isImportingRoute = false;
+    setButtonLoading(importBtn, false);
     fileInputElement.value = "";
   }
 });
 
 exportBtn.addEventListener("click", () => {
+  if (isExportingRoute) {
+    return;
+  }
+
   if (!currentRouteId) {
     showRoutesMessage("Сначала выберите сохранённый маршрут для экспорта.", true);
     return;
   }
+
   exportModal.classList.remove("hidden");
 });
 
@@ -86,27 +112,44 @@ closeExportModalBtn.addEventListener("click", () => {
 });
 
 confirmExportBtn.addEventListener("click", async () => {
+  if (isExportingRoute) {
+    return;
+  }
+
+  if (!currentRouteId) {
+    showRoutesMessage("Сначала выберите сохранённый маршрут для экспорта.", true);
+    exportModal.classList.add("hidden");
+    return;
+  }
+
   const selectedFormat = exportFormatSelect.value;
   exportModal.classList.add("hidden");
 
   try {
+    isExportingRoute = true;
+    setButtonLoading(confirmExportBtn, true, "Скачивание...");
+
     showRoutesMessage("Формирование файла экспорта...");
     const blob = await exportRoute(currentRouteId, selectedFormat);
 
     const downloadUrl = URL.createObjectURL(blob);
     const downloadAnchor = document.createElement("a");
+
     downloadAnchor.href = downloadUrl;
     downloadAnchor.download = `${currentRoute ? currentRoute.name : "route"}.${selectedFormat}`;
-    
+
     document.body.appendChild(downloadAnchor);
     downloadAnchor.click();
-    
+
     document.body.removeChild(downloadAnchor);
     URL.revokeObjectURL(downloadUrl);
 
     showRoutesMessage("Маршрут успешно экспортирован.");
   } catch (error) {
     showRoutesMessage(`Ошибка экспорта: ${error.message}`, true);
+  } finally {
+    isExportingRoute = false;
+    setButtonLoading(confirmExportBtn, false);
   }
 });
 
@@ -163,6 +206,10 @@ loginBtn.addEventListener("click", async () => {
 });
 
 logoutBtn.addEventListener("click", async () => {
+  if (!confirmDiscardUnsavedChanges()) {
+    return;
+  }
+
   try {
     await logout();
     setAuthStatus(false);
@@ -189,11 +236,44 @@ let currentRoute = null;
 let isRouteChanged = false;
 let visibleRouteIds = new Set();
 
+let isSavingRoute = false;
+let isDeletingRoute = false;
+let isMergingRoutes = false;
+let isImportingRoute = false;
+let isExportingRoute = false;
+
 const undoStack = [];
 const redoStack = [];
 const MAX_HISTORY_LENGTH = 50;
 
 let isApplyingHistory = false;
+
+function setButtonLoading(button, isLoading, loadingText = "") {
+  if (!button) {
+    return;
+  }
+
+  if (isLoading) {
+    if (!button.dataset.originalText) {
+      button.dataset.originalText = button.textContent;
+    }
+
+    button.disabled = true;
+
+    if (loadingText) {
+      button.textContent = loadingText;
+    }
+
+    return;
+  }
+
+  button.disabled = false;
+
+  if (button.dataset.originalText) {
+    button.textContent = button.dataset.originalText;
+    delete button.dataset.originalText;
+  }
+}
 
 function cloneGeometry(geometry) {
   return geometry ? JSON.parse(JSON.stringify(geometry)) : null;
@@ -244,7 +324,7 @@ function restoreRouteSnapshot(snapshot) {
   clearRouteFromMap(snapshot.routeId);
 
   if (snapshot.geometry) {
-    drawRouteGeometry(snapshot.geometry, snapshot.routeId);
+    drawRouteGeometry(snapshot.geometry, snapshot.routeId, false, false);
   }
 
   isApplyingHistory = false;
@@ -293,6 +373,14 @@ function showRoutesMessage(message, isError = false) {
   routesMessage.classList.toggle("error", isError);
 }
 
+function confirmDiscardUnsavedChanges() {
+  if (!isRouteChanged) {
+    return true;
+  }
+
+  return confirm("Есть несохранённые изменения. Продолжить без сохранения?");
+}
+
 let isSnappingRoute = false;
 let shouldSnapRouteAgain = false;
 
@@ -309,7 +397,7 @@ async function snapFeatureGroup(routeId, features, shouldFit = false) {
     throw new Error("Backend не вернул примагниченную геометрию.");
   }
 
-  replaceRouteFeaturesWithGeometry(routeId, features, result.snapped_geometry, shouldFit);
+  replaceRouteFeaturesWithGeometry(routeId, features, result.snapped_geometry, shouldFit, false);
 
   return true;
 }
@@ -355,7 +443,6 @@ async function snapFullCurrentRoute() {
     await snapFeatureGroup(editingRouteId, chunk, false);
   }
 
-  fitMapToRoute();
   markRouteAsChanged();
 
   showRoutesMessage("Весь маршрут примагничен. Нажмите “Сохранить”, чтобы записать изменения.");
@@ -541,6 +628,11 @@ async function showRouteOnMap(routeId) {
 }
 
 function hideRouteFromMap(routeId) {
+  if (currentRouteId === String(routeId) && !confirmDiscardUnsavedChanges()) {
+    renderActiveRoute();
+    return;
+  }
+
   clearRouteFromMap(routeId);
   visibleRouteIds.delete(String(routeId));
 
@@ -552,7 +644,11 @@ function hideRouteFromMap(routeId) {
   showRoutesMessage("Маршрут скрыт с карты.");
 }
 
-async function openRoute(routeId) {
+async function openRoute(routeId, skipUnsavedCheck = false) {
+  if (currentRouteId !== String(routeId) && !skipUnsavedCheck && !confirmDiscardUnsavedChanges()) {
+    return;
+  }
+
   try {
     const route = await getRouteById(routeId);
 
@@ -568,6 +664,10 @@ async function openRoute(routeId) {
 }
 
 newRouteBtn.addEventListener("click", () => {
+  if (!confirmDiscardUnsavedChanges()) {
+    return;
+  }
+
   clearRouteFromMap(DRAFT_ROUTE_ID);
   setCurrentRoute(null);
   routeNameInput.value = "";
@@ -577,6 +677,10 @@ newRouteBtn.addEventListener("click", () => {
 });
 
 saveRouteBtn.addEventListener("click", async () => {
+  if (isSavingRoute) {
+    return;
+  }
+
   const name = routeNameInput.value.trim();
   const editingRouteId = getEditingRouteId();
   const geometry = getRouteGeometryFromMap(editingRouteId);
@@ -592,6 +696,9 @@ saveRouteBtn.addEventListener("click", async () => {
   }
 
   try {
+    isSavingRoute = true;
+    setButtonLoading(saveRouteBtn, true, "Сохранение...");
+
     let savedRoute;
 
     if (currentRouteId) {
@@ -600,7 +707,7 @@ saveRouteBtn.addEventListener("click", async () => {
         geometry,
       });
 
-      drawRouteGeometry(savedRoute.geometry || geometry, savedRoute.id);
+      drawRouteGeometry(savedRoute.geometry || geometry, savedRoute.id, false, false);
       visibleRouteIds.add(String(savedRoute.id));
       showRoutesMessage("Маршрут обновлён.");
     } else {
@@ -619,10 +726,21 @@ saveRouteBtn.addEventListener("click", async () => {
     await loadRoutes();
   } catch (error) {
     showRoutesMessage(error.message, true);
+  } finally {
+    isSavingRoute = false;
+    setButtonLoading(saveRouteBtn, false);
   }
 });
 
 mergeRoutesBtn.addEventListener("click", async () => {
+  if (isMergingRoutes) {
+    return;
+  }
+
+  if (!confirmDiscardUnsavedChanges()) {
+    return;
+  }
+
   const routeIds = Array.from(visibleRouteIds);
 
   if (routeIds.length < 2) {
@@ -631,6 +749,9 @@ mergeRoutesBtn.addEventListener("click", async () => {
   }
 
   try {
+    isMergingRoutes = true;
+    setButtonLoading(mergeRoutesBtn, true, "Объединение...");
+
     showRoutesMessage("Выполняется объединение выбранных маршрутов...");
 
     const result = await mergeRoutes(routeIds);
@@ -647,16 +768,24 @@ mergeRoutesBtn.addEventListener("click", async () => {
     routeNameInput.value = "Объединённый маршрут";
     resetRouteStats();
     clearRouteHistory();
+    markRouteAsChanged();
 
     showRoutesMessage(
       "Маршруты объединены на карте. Введите название и нажмите “Сохранить”, чтобы создать новый маршрут."
     );
   } catch (error) {
     showRoutesMessage(`Не удалось объединить маршруты: ${error.message}`, true);
+  } finally {
+    isMergingRoutes = false;
+    setButtonLoading(mergeRoutesBtn, false);
   }
 });
 
 deleteRouteBtn.addEventListener("click", async () => {
+  if (isDeletingRoute) {
+    return;
+  }
+
   if (!currentRouteId) {
     showRoutesMessage("Сначала выберите маршрут.", true);
     return;
@@ -670,6 +799,9 @@ deleteRouteBtn.addEventListener("click", async () => {
   }
 
   try {
+    isDeletingRoute = true;
+    setButtonLoading(deleteRouteBtn, true, "Удаление...");
+
     await deleteRoute(routeIdToDelete);
 
     clearRouteFromMap(routeIdToDelete);
@@ -681,6 +813,9 @@ deleteRouteBtn.addEventListener("click", async () => {
     showRoutesMessage("Маршрут удалён.");
   } catch (error) {
     showRoutesMessage(error.message, true);
+  } finally {
+    isDeletingRoute = false;
+    setButtonLoading(deleteRouteBtn, false);
   }
 });
 
