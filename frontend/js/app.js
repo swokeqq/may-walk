@@ -415,7 +415,7 @@ async function snapLastRouteLines() {
 
   showRoutesMessage(`Выполняется примагничивание последних ${snapFeatures.length} линий маршрута...`);
 
-  await snapFeatureGroup(editingRouteId, snapFeatures, true);
+  await snapFeatureGroup(editingRouteId, snapFeatures, false);
 
   markRouteAsChanged();
   showRoutesMessage("Участок маршрута примагничен. Нажмите “Сохранить”, чтобы записать изменения.");
