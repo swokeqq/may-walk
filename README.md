@@ -1,6 +1,7 @@
 # Web-приложение «Майская прогулка» (may-walk)
 
 [![FastAPI](https://img.shields.io/badge/Backend-FastAPI-009688?logo=fastapi&logoColor=white)](https://fastapi.tiangolo.com)
+[![React](https://img.shields.io/badge/Frontend-React-61DAFB?logo=react&logoColor=black)](https://react.dev/)
 [![OpenLayers](https://img.shields.io/badge/Frontend-OpenLayers-2176ff?logo=openlayers&logoColor=white)](https://openlayers.org)
 [![PostGIS](https://img.shields.io/badge/DB-PostgreSQL%20%2B%20PostGIS-336791?logo=postgresql&logoColor=white)](https://postgis.net)
 [![OSRM](https://img.shields.io/badge/Routing-OSRM-blue)](http://project-osrm.org)
@@ -14,16 +15,17 @@
 
 ## 🚀 Быстрый запуск (Локально)
 
-Для работы приложения необходимы **Docker** (с Docker Compose) и плагин **Live Server** для VS Code (или аналогичный статический веб-сервер) на фронтенде.
+Для работы приложения необходимы **Docker** (с Docker Compose) и **Node.js 20+** (вместе с npm) для фронтенда.
 
 ### Шаг 1. Настройка переменных окружения
-Создайте в корне проекта файл `.env` на основе шаблона и введите актуальные данные:
+Создайте в каталоге `backend/` файл `.env` на основе шаблона и введите актуальные данные:
 ```bash
+cd backend
 cp .env.example .env
 ```
 
 ### Шаг 2. Запуск Backend и Базы Данных (через Docker)
-Бэкенд-сервис, СУБД PostgreSQL с расширением PostGIS и маршрутизатор OSRM запускаются в изолированных контейнерах одной командой:
+Бэкенд-сервис, СУБД PostgreSQL с расширением PostGIS и маршрутизатор OSRM запускаются в изолированных контейнерах одной командой (из каталога `backend/`):
 ```bash
 docker compose up -d --build
 ```
@@ -33,13 +35,25 @@ docker compose up -d --build
 3. Проведет необходимые миграции базы данных через Alembic.
 4. Запустит сервис маршрутизации OSRM с предзагруженными картами Свердловской области.
 
-### Шаг 3. Запуск Frontend
-Поскольку клиентская часть реализована на чистом JavaScript без компилируемых фреймворков, для её запуска достаточно любого статического веб-сервера.
+При первом запуске создайте пароль администратора, под которым вы будете входить в интерфейс:
+```bash
+docker compose exec backend uv run python -m may_walk.cli create-admin
+```
 
-1. Откройте директорию проекта в редакторе (например, в **VS Code**).
-2. Нажмите правой кнопкой мыши по файлу `frontend/index.html` и выберите **"Open with Live Server"** (убедитесь, что Live Server настроен на работу на порту `5500`).
-3. Приложение откроется в вашей системе по адресу:
-   👉 **[http://localhost:5500/frontend/index.html](http://localhost:5500/frontend/index.html)**
+### Шаг 3. Запуск Frontend (React + Vite)
+Клиентская часть написана на **React** и собирается **Vite**. Из каталога `frontend/`:
+```bash
+cd frontend
+npm install
+npm run dev
+```
+Приложение откроется по адресу **[http://localhost:5500](http://localhost:5500)**
+
+Dev-сервер работает на порту `5500` и проксирует все запросы `/api` на бэкенд `http://localhost:8000`, поэтому отдельная настройка CORS не нужна. Если бэкенд работает на другом адресе, создайте `frontend/.env` по шаблону `frontend/.env.example` и укажите `VITE_BACKEND_URL`.
+
+Сборка для продакшена: `npm run build` (результат в `frontend/dist/`), локальный просмотр сборки: `npm run preview`.
+
+> **WSL:** ставьте Node.js внутри WSL (например, через [nvm](https://github.com/nvm-sh/nvm): `nvm install 22`), а не используйте Windows-версию npm. Иначе `npm install` скачает бинарники esbuild не для той ОС.
 
 ---
 
@@ -69,12 +83,12 @@ docker compose up -d --build
 ## 🛠 Технологический стек
 
 ### В клиентской части (Frontend)
-*   **Vanilla JavaScript (ES6+):** Написание чистого, структурированного кода без излишней реактивной обертки, что обеспечивает моментальный рендеринг геометрии и оптимизирует нагрузку.
+*   **React 18 + Vite:** Компонентный интерфейс (светлый минималистичный дизайн на JetBrains Mono по [макету в Figma](https://www.figma.com/design/ZsJo3GZbhWm2Guzu0FIARv)). Работа с картой вынесена в отдельный класс `MapEngine`, поэтому React не перерисовывает геометрию.
 *   **OpenLayers:** Высокопроизводительная библиотека для работы с интерактивными картами. Отвечает за:
     *   Динамический рендеринг векторных слоев (маршруты, контрольные пункты КП).
     *   Инструменты интерактивного рисования линий (`Draw`), удаления сегментов (`Select` + `Modify`) и панорамирования.
     *   Работу со сторонними тайлами (OSM, Яндекс.Карты, Google Maps).
-*   **HTML5 / CSS3:** Современная разметка с адаптивной боковой панелью управления, модальными окнами, формами авторизации и карточками статистики.
+*   **CSS-токены:** цвета, отступы и типографика заданы CSS-переменными (`src/styles/tokens.css`), один в один с переменными макета. Иконки — `lucide-react`.
 
 ### В серверной части (Backend)
 *   **FastAPI:** Легковесный высокопроизводительный асинхронный веб-фреймворк на Python. Используется для:
@@ -107,15 +121,15 @@ may-walk/
 │   └── pyproject.toml        # Описание зависимостей и метаинформации Python
 │
 ├── frontend/
-│   ├── index.html            # Точка входа, разметка дашборда
-│   ├── style.css             # Стили, адаптивная сетка, кастомные селекторы
-│   └── js/
-│       ├── app.js            # Инициализация приложения, менеджер состояний
-│       ├── map.js            # Конфигурация карты OpenLayers и слоёв
-│       ├── tools.js          # Логика рисования, редактирования и стирания
-│       ├── layers.js         # Переключение подложек (OSM, Google, Yandex)
-│       ├── api.js            # Кастомный клиент fetch для запросов к бэкенду
-│       └── dom.js            # Манипуляции компонентами интерфейса и sidebar
+│   ├── index.html            # Точка входа Vite
+│   ├── vite.config.js        # Dev-сервер :5500 и прокси /api → backend
+│   └── src/
+│       ├── App.jsx           # Каркас приложения, горячие клавиши, модальные окна
+│       ├── api/client.js     # fetch-клиент REST API (cookie-сессия)
+│       ├── map/MapEngine.js  # OpenLayers: подложки, кисть/ластик/рука, геометрия
+│       ├── hooks/            # useRouteEditor (состояние редактора), тосты, подтверждения
+│       ├── components/       # ui/ (кнопки, поля), layout/ (панели), map/, modals/
+│       └── styles/           # Дизайн-токены и стили
 │
 ├── .github/workflows/        # Настройки CI/CD (Linter, Tests, Autodeploy)
 ├── docker-compose.yml        # Конфигурация запуска сервисов (Backend, DB, OSRM)
@@ -146,6 +160,6 @@ may-walk/
 
 Контейнеры оркеструются в единой сети. Вот базовая схема взаимодействия сервисов в файле `docker-compose.yml`:
 
-*   **db**: Контейнер СУБД на базе `postgis/postgis:15-3.3` (порт `5432`). Инициализирует пространственную БД и хранит таблицы маршрутов.
+*   **db**: Контейнер СУБД на базе `postgis/postgis:17-3.5` (порт `5432`). Инициализирует пространственную БД и хранит таблицы маршрутов.
 *   **osrm**: Сервис маршрутизации на основе `osrm/osrm-backend`. Считывает OSM-карты из директории `/data` и предоставляет порт `5000` для map-matching.
 *   **backend**: Наше FastAPI асинхронное приложение. Зависит от СУБД и OSRM, осуществляет миграции и проксирует запросы на порт `3000`.
